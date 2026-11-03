@@ -1,3 +1,5 @@
+import unicodedata
+
 from social_una.dominio.modelos import Usuario
 
 class CatalogoUsuarios:
@@ -31,14 +33,29 @@ class CatalogoUsuarios:
 
     def buscar_por_texto(self, texto: str):
         """Busca usuarios por nombre o nombre de usuario."""
-        texto = texto.lower().strip()
 
-        return [
+        def normalizar(valor):
+            valor = valor.lower().strip()
+
+            return "".join(
+                caracter
+                for caracter in unicodedata.normalize("NFD", valor)
+                if unicodedata.category(caracter) != "Mn"
+            )
+
+        texto = normalizar(texto)
+
+        resultados = [
             usuario
             for usuario in self._usuarios
-            if texto in usuario.nombre.lower()
-            or texto in usuario.nombre_usuario.lower()
+            if texto in normalizar(usuario.nombre)
+            or texto in normalizar(usuario.nombre_usuario)
         ]
+
+        return sorted(
+            resultados,
+            key=lambda usuario: normalizar(usuario.nombre)
+        )
 
     def listar_todos(self):
         """Devuelve todos los usuarios registrados."""
@@ -46,6 +63,7 @@ class CatalogoUsuarios:
 
     def siguiente_id(self):
         """Calcula el siguiente ID disponible."""
+
         if not self._usuarios:
             return 1
 
