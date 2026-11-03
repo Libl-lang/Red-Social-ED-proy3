@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Social UNA
+datos/ejecucion/
+*.tmp
+.vscode/settings.json
