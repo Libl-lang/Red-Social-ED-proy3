@@ -26,6 +26,11 @@ class RepositorioUsuariosJson(RepositorioUsuarios):
                 "El archivo de usuarios tiene un formato incorrecto."
             )
 
+        if not all(isinstance(usuario, dict) for usuario in datos):
+            raise ErrorAlmacenamiento(
+                "El archivo de usuarios contiene registros inválidos."
+            )
+
         try:
             return [
                 Usuario.desde_diccionario(usuario)
