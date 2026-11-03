@@ -95,7 +95,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
     ) -> Usuario:
         """Verifica las credenciales e inicia la sesion."""
 
-        if not nombre_usuario or not contrasena:
+        if not nombre_usuario or not nombre_usuario.strip() or not contrasena:
             raise ErrorAutenticacion(
                 "Debe ingresar el usuario y la contrasena."
             )
