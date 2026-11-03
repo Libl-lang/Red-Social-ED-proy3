@@ -1,5 +1,6 @@
 import unicodedata
 
+from social_una.dominio.errores import ErrorDuplicado
 from social_una.dominio.modelos import Usuario
 
 class CatalogoUsuarios:
@@ -10,14 +11,27 @@ class CatalogoUsuarios:
         self._usuarios_por_nombre = {}
         self._usuarios_por_id = {}
 
+    @staticmethod
+    def _normalizar(texto: str) -> str:
+        """Normaliza un texto para comparar sin distinguir tildes."""
+        texto = texto.lower().strip()
+
+        return "".join(
+            caracter
+            for caracter in unicodedata.normalize("NFD", texto)
+            if unicodedata.category(caracter) != "Mn"
+        )
+
     def agregar(self, usuario: Usuario):
         """Agrega un usuario al catalogo."""
 
         if usuario.id_usuario in self._usuarios_por_id:
-            raise ValueError("Ya existe un usuario con ese ID.")
+            raise ErrorDuplicado("Ya existe un usuario con ese ID.")
 
         if usuario.nombre_usuario in self._usuarios_por_nombre:
-            raise ValueError("El nombre de usuario ya esta registrado.")
+            raise ErrorDuplicado(
+                "El nombre de usuario ya esta registrado."
+            )
 
         self._usuarios.append(usuario)
         self._usuarios_por_nombre[usuario.nombre_usuario] = usuario
@@ -34,27 +48,20 @@ class CatalogoUsuarios:
     def buscar_por_texto(self, texto: str):
         """Busca usuarios por nombre o nombre de usuario."""
 
-        def normalizar(valor):
-            valor = valor.lower().strip()
-
-            return "".join(
-                caracter
-                for caracter in unicodedata.normalize("NFD", valor)
-                if unicodedata.category(caracter) != "Mn"
-            )
-
-        texto = normalizar(texto)
+        texto_normalizado = self._normalizar(texto)
 
         resultados = [
             usuario
             for usuario in self._usuarios
-            if texto in normalizar(usuario.nombre)
-            or texto in normalizar(usuario.nombre_usuario)
+            if texto_normalizado in self._normalizar(usuario.nombre)
+            or texto_normalizado in self._normalizar(
+                usuario.nombre_usuario
+            )
         ]
 
         return sorted(
             resultados,
-            key=lambda usuario: normalizar(usuario.nombre)
+            key=lambda usuario: self._normalizar(usuario.nombre)
         )
 
     def listar_todos(self):
