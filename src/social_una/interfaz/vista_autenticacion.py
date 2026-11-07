@@ -161,6 +161,8 @@ class VistaAutenticacion(tk.Tk):
         ).pack(fill="x")
 
         self.txt_usuario.focus_set()
+        self.txt_usuario.delete(0, tk.END)
+        self.txt_contrasena.delete(0, tk.END)
         self.bind("<Return>", lambda evento: self._iniciar_sesion())
 
     def mostrar_registro(self):
