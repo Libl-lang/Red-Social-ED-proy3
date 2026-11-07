@@ -14,6 +14,7 @@ class CatalogoUsuarios:
     @staticmethod
     def _normalizar(texto: str) -> str:
         """Normaliza un texto para comparar sin distinguir tildes."""
+
         texto = texto.lower().strip()
 
         return "".join(
@@ -25,24 +26,35 @@ class CatalogoUsuarios:
     def agregar(self, usuario: Usuario):
         """Agrega un usuario al catalogo."""
 
-        if usuario.id_usuario in self._usuarios_por_id:
-            raise ErrorDuplicado("Ya existe un usuario con ese ID.")
+        nombre_normalizado = self._normalizar(
+            usuario.nombre_usuario
+        )
 
-        if usuario.nombre_usuario in self._usuarios_por_nombre:
+        if usuario.id_usuario in self._usuarios_por_id:
+            raise ErrorDuplicado(
+                "Ya existe un usuario con ese ID."
+            )
+
+        if nombre_normalizado in self._usuarios_por_nombre:
             raise ErrorDuplicado(
                 "El nombre de usuario ya esta registrado."
             )
 
         self._usuarios.append(usuario)
-        self._usuarios_por_nombre[usuario.nombre_usuario] = usuario
+
+        self._usuarios_por_nombre[nombre_normalizado] = usuario
         self._usuarios_por_id[usuario.id_usuario] = usuario
 
     def buscar_por_nombre_usuario(self, nombre_usuario: str):
-        """Busca un usuario por su nombre de usuario."""
-        return self._usuarios_por_nombre.get(nombre_usuario)
+        """Busca un usuario sin distinguir mayusculas ni tildes."""
+
+        nombre_normalizado = self._normalizar(nombre_usuario)
+
+        return self._usuarios_por_nombre.get(nombre_normalizado)
 
     def buscar_por_id(self, id_usuario: int):
         """Busca un usuario por su ID."""
+
         return self._usuarios_por_id.get(id_usuario)
 
     def buscar_por_texto(self, texto: str):
@@ -66,6 +78,7 @@ class CatalogoUsuarios:
 
     def listar_todos(self):
         """Devuelve todos los usuarios registrados."""
+
         return list(self._usuarios)
 
     def siguiente_id(self):
