@@ -27,6 +27,7 @@ LARGO_MAXIMO_PUBLICACION = 280
 
 
 class ServicioPublicaciones:
+    
     """
     Publica mensajes y arma el muro del usuario activo.
     ----------------------------------------------------------------------
@@ -125,7 +126,7 @@ class ServicioPublicaciones:
     def _ordenar_recientes(publicaciones: list[Publicacion]) -> list[Publicacion]:
 
         """Ordena de la más reciente a la más antigua; con igual fecha, el id mayor primero."""
-        
+
         # Las fechas ISO 8601 en UTC se ordenan correctamente como texto
         return sorted(
             publicaciones,
