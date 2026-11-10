@@ -1,27 +1,40 @@
-from social_una.composicion import crear_servicios
+from social_una.composicion import construir_aplicacion
 from social_una.interfaz.vista_autenticacion import VistaAutenticacion
-from social_una.interfaz.ventana_principal import VentanaPrincipal
 
 def ejecutar_aplicacion():
     """Inicia la aplicacion Social UNA."""
 
-    # Construir los servicios de M1.
-    servicios = crear_servicios()
-    servicio_autenticacion = servicios["autenticacion"]
+    # Construir todos los componentes reales (M1 + M2 + M3) y la interfaz.
+    # ruta_datos es la carpeta de ejecucion donde se guardan los archivos.
+    app = construir_aplicacion("datos")
+
+    servicio_autenticacion = app["autenticacion"]
+    servicio_social = app["social"]
+    servicio_publicaciones = app["publicaciones"]
+    sesion = app["sesion"]
 
     ventana_acceso = None
     ventana_principal = None
 
     def abrir_ventana_principal(usuario):
-        """Abre la ventana principal despues del inicio de sesion."""
+        """Abre la ventana principal despues del inicio de sesion.
+
+        Inicia la sesion del usuario y crea la VentanaPrincipal con los
+        tres servicios reales y la sesion.
+        """
         nonlocal ventana_principal
+
+        # Iniciar sesion del usuario autenticado
+        sesion.iniciar(usuario)
 
         ventana_principal = VentanaPrincipal(
             ventana_acceso,
-            usuario,
             servicio_autenticacion,
-            volver_al_login
+            servicio_social,
+            servicio_publicaciones,
+            sesion,
         )
+        ventana_acceso.withdraw()
 
     def volver_al_login():
         """Regresa a la pantalla de inicio de sesion."""
@@ -31,7 +44,7 @@ def ejecutar_aplicacion():
     # Crear la ventana de autenticacion.
     ventana_acceso = VistaAutenticacion(
         servicio_autenticacion,
-        abrir_ventana_principal
+        abrir_ventana_principal,
     )
 
     # Mantener activa la aplicacion.

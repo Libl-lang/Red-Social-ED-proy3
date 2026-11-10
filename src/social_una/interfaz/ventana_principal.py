@@ -1,21 +1,34 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+from social_una.dominio.errores import ErrorSocialUna
+from social_una.interfaz.alertas import mostrar_error, mostrar_informacion
+from social_una.interfaz.vista_muro import VistaMuro
+from social_una.interfaz.vista_social import VistaSocial
+
+
 class VentanaPrincipal(tk.Toplevel):
-    """Ventana principal de Social UNA despues de iniciar sesion."""
+    """Ventana principal de Social UNA despues de iniciar sesion.
+
+    Recibe los tres servicios reales y la sesion, y coordina la navegacion
+    entre las vistas de publicaciones y amistades. Refresca las vistas al
+    cambiar de pestaña y despues de realizar acciones.
+    """
 
     def __init__(
         self,
         ventana_padre,
-        usuario,
         servicio_autenticacion,
-        al_cerrar_sesion
+        servicio_social,
+        servicio_publicaciones,
+        sesion,
     ):
         super().__init__(ventana_padre)
 
-        self._usuario = usuario
-        self._servicio = servicio_autenticacion
-        self._al_cerrar_sesion = al_cerrar_sesion
+        self._servicio_autenticacion = servicio_autenticacion
+        self._servicio_social = servicio_social
+        self._servicio_publicaciones = servicio_publicaciones
+        self._sesion = sesion
         self._cerrando = False
 
         self.title("Social UNA - Inicio")
@@ -28,8 +41,12 @@ class VentanaPrincipal(tk.Toplevel):
 
         self.protocol(
             "WM_DELETE_WINDOW",
-            self._cerrar_sesion
+            self._cerrar_sesion,
         )
+
+        # Actualizar bienvenida y mostrar la primera vista
+        self._actualizar_bienvenida()
+        self._mostrar_publicaciones()
 
     def _centrar_ventana(self):
         """Centra la ventana en la pantalla."""
@@ -44,47 +61,38 @@ class VentanaPrincipal(tk.Toplevel):
 
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
 
+    def _usuario_actual_nombre(self) -> str:
+        """Devuelve el nombre del usuario actual de la sesion, o cadena vacia."""
+        try:
+            return self._sesion.usuario_actual().nombre
+        except ErrorSocialUna:
+            return ""
+
+    def _actualizar_bienvenida(self):
+        """Actualiza la etiqueta de bienvenida con el usuario de la sesion."""
+        nombre = self._usuario_actual_nombre()
+        if hasattr(self, "_etiqueta_bienvenida") and self._etiqueta_bienvenida.winfo_exists():
+            self._etiqueta_bienvenida.config(text=f"Hola, {nombre}" if nombre else "")
+
     def _crear_interfaz(self):
         """Construye los componentes de la ventana principal."""
 
-        encabezado = tk.Frame(
-            self,
-            bg="#17365d",
-            height=85
-        )
-        encabezado.pack(fill="x")
-        encabezado.pack_propagate(False)
-
-        tk.Label(
-            encabezado,
-            text="SOCIAL UNA",
-            bg="#17365d",
-            fg="white",
-            font=("Arial", 22, "bold")
-        ).pack(side="left", padx=25, pady=20)
-
-        tk.Label(
-            encabezado,
-            text=f"Hola, {self._usuario.nombre}",
-            bg="#17365d",
-            fg="white",
-            font=("Arial", 11)
-        ).pack(side="right", padx=25)
-
+        # Contenedor principal de contenido
         contenido = tk.Frame(
             self,
             bg="#eef2f7",
             padx=35,
-            pady=30
+            pady=30,
         )
         contenido.pack(fill="both", expand=True)
 
+        # Texto de bienvenida
         tk.Label(
             contenido,
             text="Bienvenido a Social UNA",
             bg="#eef2f7",
             fg="#17365d",
-            font=("Arial", 22, "bold")
+            font=("Arial", 22, "bold"),
         ).pack(anchor="w", pady=(5, 8))
 
         tk.Label(
@@ -92,44 +100,13 @@ class VentanaPrincipal(tk.Toplevel):
             text="Tu espacio de conexion con la comunidad universitaria.",
             bg="#eef2f7",
             fg="#64748b",
-            font=("Arial", 11)
+            font=("Arial", 11),
         ).pack(anchor="w", pady=(0, 25))
 
-        tarjeta = tk.Frame(
-            contenido,
-            bg="white",
-            padx=25,
-            pady=25
-        )
-        tarjeta.pack(fill="x", pady=10)
-
-        tk.Label(
-            tarjeta,
-            text="Mi perfil",
-            bg="white",
-            fg="#17365d",
-            font=("Arial", 15, "bold")
-        ).pack(anchor="w", pady=(0, 12))
-
-        tk.Label(
-            tarjeta,
-            text=f"Nombre: {self._usuario.nombre}",
-            bg="white",
-            fg="#334155",
-            font=("Arial", 11)
-        ).pack(anchor="w", pady=4)
-
-        tk.Label(
-            tarjeta,
-            text=f"Usuario: {self._usuario.nombre_usuario}",
-            bg="white",
-            fg="#334155",
-            font=("Arial", 11)
-        ).pack(anchor="w", pady=4)
-
+        # Panel de opciones (pestañas simuladas con botones)
         opciones = tk.Frame(
             contenido,
-            bg="#eef2f7"
+            bg="#eef2f7",
         )
         opciones.pack(fill="x", pady=20)
 
@@ -137,39 +114,94 @@ class VentanaPrincipal(tk.Toplevel):
         estilo.configure(
             "Opcion.TButton",
             font=("Arial", 11, "bold"),
-            padding=15
+            padding=15,
         )
 
-        ttk.Button(
+        self._btn_publicaciones = ttk.Button(
             opciones,
             text="Publicaciones",
             style="Opcion.TButton",
-            state="disabled"
-        ).pack(side="left", expand=True, fill="x", padx=(0, 8))
+            command=self._mostrar_publicaciones,
+        )
+        self._btn_publicaciones.pack(
+            side="left", expand=True, fill="x", padx=(0, 8)
+        )
 
-        ttk.Button(
+        self._btn_amistades = ttk.Button(
             opciones,
             text="Amistades",
             style="Opcion.TButton",
-            state="disabled"
-        ).pack(side="left", expand=True, fill="x", padx=8)
+            command=self._mostrar_amistades,
+        )
+        self._btn_amistades.pack(
+            side="left", expand=True, fill="x", padx=8
+        )
 
         ttk.Button(
             opciones,
             text="Cerrar sesion",
             style="Opcion.TButton",
-            command=self._cerrar_sesion
+            command=self._cerrar_sesion,
         ).pack(side="left", expand=True, fill="x", padx=(8, 0))
 
+        # Area de contenido dinamico (se reemplaza al cambiar de vista)
+        self._area_contenido = tk.Frame(
+            contenido,
+            bg="#eef2f7",
+        )
+        self._area_contenido.pack(fill="both", expand=True)
+
+        # Nota informativa
         tk.Label(
             contenido,
-            text="Las secciones de publicaciones y amistades se habilitaran "
-                 "cuando se integren los modulos correspondientes.",
+            text="Seleccione una seccion para ver su contenido. "
+                 "Las vistas se refrescan al cambiar de pestaña.",
             bg="#eef2f7",
             fg="#64748b",
             font=("Arial", 9),
-            wraplength=750
+            wraplength=750,
         ).pack(anchor="w", pady=10)
+
+    # ------------------------------------------------------------------
+    # Navegación entre vistas con refresco
+    # ------------------------------------------------------------------
+
+    def _limpiar_area_contenido(self):
+        """Elimina todos los widgets del area de contenido dinamico."""
+        for widget in self._area_contenido.winfo_children():
+            widget.destroy()
+
+    def _mostrar_publicaciones(self):
+        """Muestra la vista del muro de publicaciones y la refresca."""
+        self._limpiar_area_contenido()
+        self._vista_muro = VistaMuro(
+            self._area_contenido,
+            self._servicio_publicaciones,
+        )
+        self._vista_muro.pack(fill="both", expand=True)
+        # Refrescar al cambiar de pestaña
+        self._vista_muro.refrescar()
+        self.title("Social UNA - Publicaciones")
+
+    def _mostrar_amistades(self):
+        """Muestra la vista de amistades y la refresca."""
+        self._limpiar_area_contenido()
+        self._vista_social = VistaSocial(
+            self._area_contenido,
+            self._servicio_social,
+        )
+        self._vista_social.pack(fill="both", expand=True)
+        # Refrescar lista de amigos al cambiar de pestaña
+        try:
+            self._vista_social._refrescar_amigos()
+        except Exception:
+            # Si la vista social no expone este metodo, se ignora
+            pass
+        self.title("Social UNA - Amistades")
+
+    # ------------------------------------------------------------------
+    # Cierre de sesion
+    # ------------------------------------------------------------------
 
     def _cerrar_sesion(self):
         """Cierra la sesion y regresa a la ventana de acceso."""
@@ -179,7 +211,7 @@ class VentanaPrincipal(tk.Toplevel):
 
         confirmar = messagebox.askyesno(
             "Cerrar sesion",
-            "¿Desea cerrar su sesion?"
+            "¿Desea cerrar su sesion?",
         )
 
         if not confirmar:
@@ -188,13 +220,17 @@ class VentanaPrincipal(tk.Toplevel):
         self._cerrando = True
 
         try:
-            self._servicio.cerrar_sesion()
+            self._servicio_autenticacion.cerrar_sesion()
             self.destroy()
-            self._al_cerrar_sesion()
+
+            # Notificar a la ventana padre (VistaAutenticacion) para volver al login
+            padre = self.master
+            if padre is not None and hasattr(padre, "volver_al_login"):
+                padre.volver_al_login()
 
         except Exception as error:
             self._cerrando = False
             messagebox.showerror(
                 "Error",
-                f"No se pudo cerrar la sesion: {error}"
+                f"No se pudo cerrar la sesion: {error}",
             )

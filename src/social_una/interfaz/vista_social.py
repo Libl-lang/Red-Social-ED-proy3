@@ -34,6 +34,7 @@ class VistaSocial:
             servicio: ServicioSocial para operaciones de negocio.
         """
         self._root = root
+        self._servicio = servicio
         # Panel medio: resultados de busqueda
         frame_resultados = ttk.LabelFrame(
             self._root, text="Resultados de busqueda", padding="10"
@@ -66,10 +67,20 @@ class VistaSocial:
         btn_agregar.pack(pady=(5, 0))
 
         # Panel inferior: amigos del usuario activo
-        frame_amigos = ttk.LabelFrame(
+        self._frame_amigos = ttk.LabelFrame(
             self._root, text="Mis amigos", padding="10"
         )
-        frame_amigos.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        self._frame_amigos.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self._lista_amigos = tk.Listbox(self._frame_amigos, height=6)
+        self._lista_amigos.pack(fill=tk.BOTH, expand=True)
+
+        # Barra de estado
+        self._etiqueta_estado = ttk.Label(self._root, text="", relief=tk.SUNKEN)
+        self._etiqueta_estado.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Construir el panel de busqueda
+        self._crear_interfaz()
 
     def _mostrar_resultados(self, texto: str) -> None:
         """Muestra los resultados de busqueda en la lista."""
@@ -133,12 +144,6 @@ class VistaSocial:
             text=f"Usuario activo: {self._servicio._usuario_actual().nombre} | "
             f"Amigos: {len(amigos)}"
         )
-        self._lista_amigos = tk.Listbox(frame_amigos, height=6)
-        self._lista_amigos.pack(fill=tk.BOTH, expand=True)
-
-        # Barra de estado
-        self._etiqueta_estado = ttk.Label(self._root, text="", relief=tk.SUNKEN)
-        self._etiqueta_estado.pack(side=tk.BOTTOM, fill=tk.X)
 
     # --- Acciones ---
 
@@ -146,13 +151,6 @@ class VistaSocial:
         """Se ejecuta al escribir en el cuadro de busqueda."""
         texto = self._entrada_busqueda.get()
         self._mostrar_resultados(texto)
-        self._servicio = servicio
-
-        self._root.title("Social UNA - Amistades")
-        self._root.geometry("600x500")
-
-        self._crear_interfaz()
-        self._refrescar_amigos()
 
     # --- Construccion de la interfaz ---
 
