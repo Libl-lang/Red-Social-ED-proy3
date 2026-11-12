@@ -1,4 +1,3 @@
-
 """
 Servicio de publicaciones y muro de Social UNA.
 ---------------------------------------------------------------------------
@@ -6,7 +5,6 @@ Contiene la lógica para publicar mensajes y para armar el muro del usuario
 activo. No lee ni escribe archivos por su cuenta: recibe el repositorio, la
 consulta de amistades, el directorio de usuarios y la sesión como contratos
 del dominio, así que funciona igual con piezas falsas o reales.
-
 ----------------------------------------------------------------------------
 """
 
@@ -47,6 +45,18 @@ class ServicioPublicaciones:
             repositorio.cargar_todo()
         )
 
+    def _registrar_evento(self, mensaje: str) -> None:
+        """Registra un evento sin interrumpir la operación principal."""
+
+        if self._registrador is None:
+            return
+
+        try:
+            self._registrador.info(mensaje)
+        except OSError:
+            # Un fallo del registro no debe interrumpir el servicio.
+            pass
+
     def publicar(self, texto: str) -> Publicacion:
         """Publica un mensaje a nombre del usuario activo."""
 
@@ -83,12 +93,11 @@ class ServicioPublicaciones:
         self._historial.agregar(publicacion)
 
         # Registrar solamente los identificadores.
-        if self._registrador is not None:
-            self._registrador.info(
-                f"Publicación creada | "
-                f"ID publicación: {publicacion.id_publicacion} | "
-                f"ID autor: {usuario.id_usuario}"
-            )
+        self._registrar_evento(
+            f"Publicación creada | "
+            f"ID publicación: {publicacion.id_publicacion} | "
+            f"ID autor: {usuario.id_usuario}"
+        )
 
         return publicacion
 
@@ -143,3 +152,4 @@ class ServicioPublicaciones:
             ),
             reverse=True,
         )
+
