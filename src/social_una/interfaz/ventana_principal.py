@@ -209,27 +209,24 @@ class VentanaPrincipal(tk.Toplevel):
 
         self.title("Social UNA - Publicaciones")
 
-    
-def _mostrar_amistades(self):
-    """Muestra la vista de amistades."""
+    def _mostrar_amistades(self):
+        """Muestra la vista de amistades."""
 
-    self._limpiar_area_contenido()
+        self._limpiar_area_contenido()
 
-    self._vista_social = VistaSocial(
-        self._area_contenido,
-        self._servicio_social,
-    )
+        self._vista_social = VistaSocial(
+            self._area_contenido,
+            self._servicio_social,
+        )
 
-    self._vista_social.pack(
-        fill="both",
-        expand=True,
-    )
-
-    self.title("Social UNA - Amistades")
-
+        self._vista_social.pack(
+            fill="both",
+            expand=True,
+        )
 
         self.title("Social UNA - Amistades")
 
+    
     # ---------------------------------------------------------
     # Cierre de sesion
     # ---------------------------------------------------------
