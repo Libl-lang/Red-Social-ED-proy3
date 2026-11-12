@@ -25,7 +25,12 @@ class VistaAutenticacion(tk.Tk):
         self._centrar_ventana()
         self._configurar_estilos()
         self.mostrar_login()
-
+        
+    def volver_al_login(self):
+    """Vuelve a mostrar la ventana de acceso después de cerrar sesión."""
+    self.deiconify()
+    self.mostrar_login()
+    
     def _centrar_ventana(self):
         """Centra la ventana en la pantalla."""
 
