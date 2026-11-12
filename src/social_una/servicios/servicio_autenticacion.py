@@ -40,21 +40,25 @@ class ServicioAutenticacion(DirectorioUsuarios):
             self._catalogo.agregar(usuario)
 
     def _registrar_evento(self, nivel: str, mensaje: str) -> None:
-        """Registra un evento si hay un registrador configurado."""
+        """Registra un evento sin interrumpir la operacion principal."""
 
         if self._registrador is None:
             return
 
-        if nivel == "warning":
-            self._registrador.warning(mensaje)
-        else:
-            self._registrador.info(mensaje)
+        try:
+            if nivel == "warning":
+                self._registrador.warning(mensaje)
+            else:
+                self._registrador.info(mensaje)
+        except OSError:
+            # Un fallo del registro no debe interrumpir el servicio.
+            pass
 
     def registrar(
         self,
         nombre: str,
         nombre_usuario: str,
-        contrasena: str
+        contrasena: str,
     ) -> Usuario:
         """Registra un usuario nuevo y guarda sus datos."""
 
@@ -82,7 +86,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
             "sha256",
             contrasena.encode("utf-8"),
             sal.encode("utf-8"),
-            self.ITERACIONES_HASH
+            self.ITERACIONES_HASH,
         ).hex()
 
         usuario = Usuario(
@@ -91,7 +95,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
             nombre_usuario=nombre_usuario,
             hash_contrasena=hash_contrasena,
             sal=sal,
-            fecha_registro=datetime.now(timezone.utc).isoformat()
+            fecha_registro=datetime.now(timezone.utc).isoformat(),
         )
 
         usuarios_actualizados = self._catalogo.listar_todos()
@@ -111,7 +115,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
     def iniciar_sesion(
         self,
         nombre_usuario: str,
-        contrasena: str
+        contrasena: str,
     ) -> Usuario:
         """Verifica las credenciales e inicia la sesion."""
 
@@ -141,12 +145,12 @@ class ServicioAutenticacion(DirectorioUsuarios):
             "sha256",
             contrasena.encode("utf-8"),
             usuario.sal.encode("utf-8"),
-            self.ITERACIONES_HASH
+            self.ITERACIONES_HASH,
         ).hex()
 
         if not secrets.compare_digest(
             hash_ingresado,
-            usuario.hash_contrasena
+            usuario.hash_contrasena,
         ):
             self._registrar_evento(
                 "warning",
@@ -203,3 +207,4 @@ class ServicioAutenticacion(DirectorioUsuarios):
         """Comprueba si existe un usuario con ese identificador."""
 
         return self._catalogo.buscar_por_id(id_usuario) is not None
+
