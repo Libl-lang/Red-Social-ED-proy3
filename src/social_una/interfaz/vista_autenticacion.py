@@ -335,8 +335,6 @@ def _iniciar_sesion(self):
             parent=self,
         )
 
-            messagebox.showerror("Error de acceso", str(error))
-
     def _registrar_usuario(self):
         """Registra una nueva cuenta."""
 
