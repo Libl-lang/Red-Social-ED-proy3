@@ -8,6 +8,7 @@ from social_una.dominio.errores import (
     ErrorAlmacenamiento,
 )
 
+
 class VistaAutenticacion(tk.Tk):
     """Ventana de inicio de sesion y registro de Social UNA."""
 
@@ -25,12 +26,7 @@ class VistaAutenticacion(tk.Tk):
         self._centrar_ventana()
         self._configurar_estilos()
         self.mostrar_login()
-        
-    def volver_al_login(self):
-    """Vuelve a mostrar la ventana de acceso después de cerrar sesión."""
-    self.deiconify()
-    self.mostrar_login()
-    
+
     def _centrar_ventana(self):
         """Centra la ventana en la pantalla."""
 
@@ -98,6 +94,21 @@ class VistaAutenticacion(tk.Tk):
             style="Subtitulo.TLabel"
         ).pack(pady=(0, 25))
 
+    def volver_al_login(self):
+        """Vuelve a mostrar la ventana de acceso."""
+
+        self.deiconify()
+        self.mostrar_login()
+
+    def _alternar_contrasena(self, campo, boton, atributo_estado):
+        """Muestra u oculta la contraseña del campo indicado."""
+
+        visible = not getattr(self, atributo_estado, False)
+        setattr(self, atributo_estado, visible)
+
+        campo.configure(show="" if visible else "*")
+        boton.configure(text="🙈" if visible else "👁")
+
     def mostrar_login(self):
         """Muestra el formulario de inicio de sesion."""
 
@@ -136,28 +147,41 @@ class VistaAutenticacion(tk.Tk):
             style="Campo.TLabel"
         ).pack(anchor="w", pady=(18, 6))
 
+        fila_contrasena = tk.Frame(self.panel, bg="white")
+        fila_contrasena.pack(fill="x")
+
         self.txt_contrasena = ttk.Entry(
-            self.panel,
+            fila_contrasena,
             font=("Arial", 11),
             show="*"
         )
-        self.txt_contrasena.pack(fill="x", ipady=7)
+        self.txt_contrasena.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            ipady=7
+        )
 
-        self.mostrar_contrasena = tk.BooleanVar(value=False)
+        self._contrasena_visible_login = False
 
-        ttk.Checkbutton(
-            self.panel,
-            text="Mostrar contrasena",
-            variable=self.mostrar_contrasena,
-            command=self._alternar_contrasena
-        ).pack(anchor="w", pady=10)
+        self.btn_mostrar_login = ttk.Button(
+            fila_contrasena,
+            text="👁",
+            width=4,
+            command=lambda: self._alternar_contrasena(
+                self.txt_contrasena,
+                self.btn_mostrar_login,
+                "_contrasena_visible_login"
+            )
+        )
+        self.btn_mostrar_login.pack(side="right", padx=(5, 0))
 
         ttk.Button(
             self.panel,
             text="Iniciar sesion",
             style="Principal.TButton",
             command=self._iniciar_sesion
-        ).pack(fill="x", pady=(15, 10))
+        ).pack(fill="x", pady=(20, 10))
 
         ttk.Button(
             self.panel,
@@ -168,7 +192,11 @@ class VistaAutenticacion(tk.Tk):
         self.txt_usuario.focus_set()
         self.txt_usuario.delete(0, tk.END)
         self.txt_contrasena.delete(0, tk.END)
-        self.bind("<Return>", lambda evento: self._iniciar_sesion())
+
+        self.bind(
+            "<Return>",
+            lambda evento: self._iniciar_sesion()
+        )
 
     def mostrar_registro(self):
         """Muestra el formulario para registrar usuarios."""
@@ -221,12 +249,34 @@ class VistaAutenticacion(tk.Tk):
             style="Campo.TLabel"
         ).pack(anchor="w", pady=(12, 5))
 
+        fila_contrasena = tk.Frame(self.panel, bg="white")
+        fila_contrasena.pack(fill="x")
+
         self.txt_contrasena_registro = ttk.Entry(
-            self.panel,
+            fila_contrasena,
             font=("Arial", 11),
             show="*"
         )
-        self.txt_contrasena_registro.pack(fill="x", ipady=6)
+        self.txt_contrasena_registro.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            ipady=6
+        )
+
+        self._contrasena_visible_registro = False
+
+        self.btn_mostrar_registro = ttk.Button(
+            fila_contrasena,
+            text="👁",
+            width=4,
+            command=lambda: self._alternar_contrasena(
+                self.txt_contrasena_registro,
+                self.btn_mostrar_registro,
+                "_contrasena_visible_registro"
+            )
+        )
+        self.btn_mostrar_registro.pack(side="right", padx=(5, 0))
 
         ttk.Button(
             self.panel,
@@ -242,14 +292,6 @@ class VistaAutenticacion(tk.Tk):
         ).pack(fill="x")
 
         self.txt_nombre.focus_set()
-
-    def _alternar_contrasena(self):
-        """Muestra u oculta la contrasena."""
-
-        if self.mostrar_contrasena.get():
-            self.txt_contrasena.configure(show="")
-        else:
-            self.txt_contrasena.configure(show="*")
 
     def _iniciar_sesion(self):
         """Verifica las credenciales del usuario."""
@@ -297,5 +339,10 @@ class VistaAutenticacion(tk.Tk):
             self.mostrar_login()
             self.txt_usuario.insert(0, usuario.nombre_usuario)
 
-        except (ErrorValidacion, ErrorDuplicado, ErrorAlmacenamiento) as error:
+        except (
+            ErrorValidacion,
+            ErrorDuplicado,
+            ErrorAlmacenamiento
+        ) as error:
             messagebox.showerror("No se pudo registrar", str(error))
+
