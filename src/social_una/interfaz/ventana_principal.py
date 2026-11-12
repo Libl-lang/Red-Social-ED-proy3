@@ -2,18 +2,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from social_una.dominio.errores import ErrorSocialUna
-from social_una.interfaz.alertas import mostrar_error, mostrar_informacion
 from social_una.interfaz.vista_muro import VistaMuro
 from social_una.interfaz.vista_social import VistaSocial
 
 
 class VentanaPrincipal(tk.Toplevel):
-    """Ventana principal de Social UNA despues de iniciar sesion.
-
-    Recibe los tres servicios reales y la sesion, y coordina la navegacion
-    entre las vistas de publicaciones y amistades. Refresca las vistas al
-    cambiar de pestaña y despues de realizar acciones.
-    """
+    """Ventana principal de Social UNA despues de iniciar sesion."""
 
     def __init__(
         self,
@@ -44,7 +38,6 @@ class VentanaPrincipal(tk.Toplevel):
             self._cerrar_sesion,
         )
 
-        # Actualizar bienvenida y mostrar la primera vista
         self._actualizar_bienvenida()
         self._mostrar_publicaciones()
 
@@ -62,22 +55,29 @@ class VentanaPrincipal(tk.Toplevel):
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     def _usuario_actual_nombre(self) -> str:
-        """Devuelve el nombre del usuario actual de la sesion, o cadena vacia."""
+        """Devuelve el nombre del usuario actual de la sesion."""
+
         try:
             return self._sesion.usuario_actual().nombre
         except ErrorSocialUna:
             return ""
 
     def _actualizar_bienvenida(self):
-        """Actualiza la etiqueta de bienvenida con el usuario de la sesion."""
+        """Actualiza la etiqueta de bienvenida."""
+
         nombre = self._usuario_actual_nombre()
-        if hasattr(self, "_etiqueta_bienvenida") and self._etiqueta_bienvenida.winfo_exists():
-            self._etiqueta_bienvenida.config(text=f"Hola, {nombre}" if nombre else "")
+
+        if (
+            hasattr(self, "_etiqueta_bienvenida")
+            and self._etiqueta_bienvenida.winfo_exists()
+        ):
+            self._etiqueta_bienvenida.config(
+                text=f"Hola, {nombre}" if nombre else ""
+            )
 
     def _crear_interfaz(self):
         """Construye los componentes de la ventana principal."""
 
-        # Contenedor principal de contenido
         contenido = tk.Frame(
             self,
             bg="#eef2f7",
@@ -86,7 +86,7 @@ class VentanaPrincipal(tk.Toplevel):
         )
         contenido.pack(fill="both", expand=True)
 
-        # Texto de bienvenida
+        # Encabezado.
         tk.Label(
             contenido,
             text="Bienvenido a Social UNA",
@@ -103,7 +103,7 @@ class VentanaPrincipal(tk.Toplevel):
             font=("Arial", 11),
         ).pack(anchor="w", pady=(0, 25))
 
-        # Panel de opciones (pestañas simuladas con botones)
+        # Opciones de navegacion.
         opciones = tk.Frame(
             contenido,
             bg="#eef2f7",
@@ -124,7 +124,10 @@ class VentanaPrincipal(tk.Toplevel):
             command=self._mostrar_publicaciones,
         )
         self._btn_publicaciones.pack(
-            side="left", expand=True, fill="x", padx=(0, 8)
+            side="left",
+            expand=True,
+            fill="x",
+            padx=(0, 8),
         )
 
         self._btn_amistades = ttk.Button(
@@ -134,7 +137,10 @@ class VentanaPrincipal(tk.Toplevel):
             command=self._mostrar_amistades,
         )
         self._btn_amistades.pack(
-            side="left", expand=True, fill="x", padx=8
+            side="left",
+            expand=True,
+            fill="x",
+            padx=8,
         )
 
         ttk.Button(
@@ -142,66 +148,85 @@ class VentanaPrincipal(tk.Toplevel):
             text="Cerrar sesion",
             style="Opcion.TButton",
             command=self._cerrar_sesion,
-        ).pack(side="left", expand=True, fill="x", padx=(8, 0))
+        ).pack(
+            side="left",
+            expand=True,
+            fill="x",
+            padx=(8, 0),
+        )
 
-        # Area de contenido dinamico (se reemplaza al cambiar de vista)
+        # Area de contenido dinamico.
         self._area_contenido = tk.Frame(
             contenido,
             bg="#eef2f7",
         )
-        self._area_contenido.pack(fill="both", expand=True)
+        self._area_contenido.pack(
+            fill="both",
+            expand=True,
+        )
 
-        # Nota informativa
+        # Nota informativa.
         tk.Label(
             contenido,
-            text="Seleccione una seccion para ver su contenido. "
-                 "Las vistas se refrescan al cambiar de pestaña.",
+            text=(
+                "Seleccione una seccion para ver su contenido. "
+                "Las vistas se refrescan al cambiar de pestaña."
+            ),
             bg="#eef2f7",
             fg="#64748b",
             font=("Arial", 9),
             wraplength=750,
         ).pack(anchor="w", pady=10)
 
-    # ------------------------------------------------------------------
-    # Navegación entre vistas con refresco
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Navegacion entre vistas
+    # ---------------------------------------------------------
 
     def _limpiar_area_contenido(self):
-        """Elimina todos los widgets del area de contenido dinamico."""
+        """Elimina los widgets del area de contenido."""
+
         for widget in self._area_contenido.winfo_children():
             widget.destroy()
 
     def _mostrar_publicaciones(self):
-        """Muestra la vista del muro de publicaciones y la refresca."""
+        """Muestra la vista del muro de publicaciones."""
+
         self._limpiar_area_contenido()
+
         self._vista_muro = VistaMuro(
             self._area_contenido,
             self._servicio_publicaciones,
         )
-        self._vista_muro.pack(fill="both", expand=True)
-        # Refrescar al cambiar de pestaña
+
+        self._vista_muro.pack(
+            fill="both",
+            expand=True,
+        )
+
         self._vista_muro.refrescar()
+
         self.title("Social UNA - Publicaciones")
 
     def _mostrar_amistades(self):
-        """Muestra la vista de amistades y la refresca."""
+        """Muestra la vista de amistades."""
+
         self._limpiar_area_contenido()
+
         self._vista_social = VistaSocial(
             self._area_contenido,
             self._servicio_social,
         )
-        self._vista_social.pack(fill="both", expand=True)
-        # Refrescar lista de amigos al cambiar de pestaña
-        try:
-            self._vista_social._refrescar_amigos()
-        except Exception:
-            # Si la vista social no expone este metodo, se ignora
-            pass
+
+        self._vista_social.pack(
+            fill="both",
+            expand=True,
+        )
+
         self.title("Social UNA - Amistades")
 
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------------
     # Cierre de sesion
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------------
 
     def _cerrar_sesion(self):
         """Cierra la sesion y regresa a la ventana de acceso."""
@@ -212,6 +237,7 @@ class VentanaPrincipal(tk.Toplevel):
         confirmar = messagebox.askyesno(
             "Cerrar sesion",
             "¿Desea cerrar su sesion?",
+            parent=self,
         )
 
         if not confirmar:
@@ -221,16 +247,23 @@ class VentanaPrincipal(tk.Toplevel):
 
         try:
             self._servicio_autenticacion.cerrar_sesion()
+
+            padre = self.master
+
             self.destroy()
 
-            # Notificar a la ventana padre (VistaAutenticacion) para volver al login
-            padre = self.master
-            if padre is not None and hasattr(padre, "volver_al_login"):
+            if padre is not None and hasattr(
+                padre,
+                "volver_al_login",
+            ):
                 padre.volver_al_login()
 
-        except Exception as error:
+        except ErrorSocialUna as error:
             self._cerrando = False
+
             messagebox.showerror(
                 "Error",
                 f"No se pudo cerrar la sesion: {error}",
+                parent=self,
             )
+
