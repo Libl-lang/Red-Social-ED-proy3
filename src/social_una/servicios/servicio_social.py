@@ -114,40 +114,52 @@ class ServicioSocial(ConsultaAmistades):
         return lista
 
     def agregar_amigo(self, id_amigo: int) -> None:
-        """
-        Agrega al usuario indicado como amigo del usuario activo.
+    """
+    Agrega al usuario indicado como amigo del usuario activo.
 
-        Valida que no sea el propio usuario, que exista y que
-        no sean amigos previamente. Después guarda los cambios.
-        """
+    Valida que no sea el propio usuario, que exista y que
+    no sean amigos previamente. Si falla el guardado, revierte
+    el cambio realizado en memoria.
+    """
 
-        usuario_activo = self._usuario_actual()
-        id_activo = usuario_activo.id_usuario
+    usuario_activo = self._usuario_actual()
+    id_activo = usuario_activo.id_usuario
 
-        if id_amigo == id_activo:
-            raise ErrorValidacion(
-                "No puedes agregarte a ti mismo como amigo."
-            )
+    if id_amigo == id_activo:
+        raise ErrorValidacion(
+            "No puedes agregarte a ti mismo como amigo."
+        )
 
-        try:
-            self._directorio.obtener_por_id(id_amigo)
-        except ErrorNoEncontrado:
-            raise ErrorNoEncontrado(
-                f"No existe un usuario con el id {id_amigo}."
-            )
+    self._directorio.obtener_por_id(id_amigo)
 
-        if self._grafo.son_amigos(id_activo, id_amigo):
-            raise ErrorDuplicado(
-                f"Ya eres amigo del usuario con id {id_amigo}."
-            )
+    if self._grafo.son_amigos(id_activo, id_amigo):
+        raise ErrorDuplicado(
+            f"Ya eres amigo del usuario con id {id_amigo}."
+        )
 
-        self._grafo.agregar_amistad(id_activo, id_amigo)
+    # Agregar temporalmente la amistad al grafo.
+    self._grafo.agregar_amistad(id_activo, id_amigo)
+
+    try:
+        # Guardar los cambios en el archivo JSON.
         self._guardar_amistades()
 
-        self._registrar_evento(
-            f"Amistad agregada | Usuario: {id_activo} | "
-            f"Nuevo amigo: {id_amigo}"
+    except Exception:
+        # Si falla el guardado, reconstruir el grafo sin esa amistad.
+        pares_actuales = self._grafo.exportar_pares()
+
+        pares_actuales.remove(
+            (min(id_activo, id_amigo), max(id_activo, id_amigo))
         )
+
+        self._grafo.cargar_pares(pares_actuales)
+
+        raise
+
+    self._registrar_evento(
+        f"Amistad agregada | Usuario: {id_activo} | "
+        f"Nuevo amigo: {id_amigo}"
+    )
 
     def listar_mis_amigos(self) -> list[Usuario]:
         """Devuelve los objetos Usuario de los amigos del usuario activo."""
