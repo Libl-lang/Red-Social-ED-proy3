@@ -293,28 +293,48 @@ class VistaAutenticacion(tk.Tk):
 
         self.txt_nombre.focus_set()
 
-    def _iniciar_sesion(self):
-        """Verifica las credenciales del usuario."""
+def _iniciar_sesion(self):
+    """Verifica las credenciales del usuario."""
 
-        nombre_usuario = self.txt_usuario.get()
-        contrasena = self.txt_contrasena.get()
+    nombre_usuario = self.txt_usuario.get()
+    contrasena = self.txt_contrasena.get()
+
+    try:
+        usuario = self._servicio.iniciar_sesion(
+            nombre_usuario,
+            contrasena
+        )
+
+        messagebox.showinfo(
+            "Bienvenido",
+            f"Bienvenido a Social UNA, {usuario.nombre}.",
+            parent=self,
+        )
+
+        self.unbind("<Return>")
+        self.withdraw()
 
         try:
-            usuario = self._servicio.iniciar_sesion(
-                nombre_usuario,
-                contrasena
-            )
-
-            messagebox.showinfo(
-                "Bienvenido",
-                f"Bienvenido a Social UNA, {usuario.nombre}."
-            )
-
-            self.unbind("<Return>")
-            self.withdraw()
             self._al_iniciar_sesion(usuario)
 
-        except ErrorAutenticacion as error:
+        except Exception as error:
+            self._servicio.cerrar_sesion()
+            self.deiconify()
+            self.mostrar_login()
+
+            messagebox.showerror(
+                "Error",
+                f"No fue posible abrir la ventana principal: {error}",
+                parent=self,
+            )
+
+    except ErrorAutenticacion as error:
+        messagebox.showerror(
+            "Error de acceso",
+            str(error),
+            parent=self,
+        )
+
             messagebox.showerror("Error de acceso", str(error))
 
     def _registrar_usuario(self):
