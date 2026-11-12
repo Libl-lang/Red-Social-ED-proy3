@@ -2,7 +2,7 @@
 Composición de la aplicación Social UNA.
 
 Construye y conecta los componentes de almacenamiento,
-repositorios, sesión y servicios. No crea ventanas gráficas.
+repositorios, sesión, servicios y registro de eventos.
 """
 
 from pathlib import Path
@@ -19,6 +19,7 @@ from social_una.almacenamiento.repositorio_publicaciones_json import (
     RepositorioPublicacionesJson,
 )
 from social_una.servicios.sesion import Sesion
+from social_una.servicios.registro_eventos import crear_registrador
 from social_una.servicios.servicio_autenticacion import (
     ServicioAutenticacion,
 )
@@ -61,8 +62,9 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
     # 1. Configurar persistencia inicial.
     _configurar_persistencia_inicial(ruta_datos, ruta_semilla)
 
-    # 2. Crear almacenamiento y repositorios.
+    # 2. Crear almacenamiento, repositorios y registrador.
     almacen = AlmacenJson()
+    registrador = crear_registrador(ruta_datos)
 
     repositorio_usuarios = RepositorioUsuariosJson(
         almacen,
@@ -84,6 +86,7 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
     servicio_autenticacion = ServicioAutenticacion(
         repositorio_usuarios,
         sesion,
+        registrador=registrador,
     )
 
     # 4. Crear servicio social.
@@ -91,6 +94,7 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
         repositorio_amistades,
         servicio_autenticacion,
         sesion,
+        registrador=registrador,
     )
 
     # 5. Crear servicio de publicaciones.
@@ -99,15 +103,17 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
         servicio_social,
         servicio_autenticacion,
         sesion,
+        registrador=registrador,
     )
 
-    # 6. Devolver componentes sin crear ventanas.
+    # 6. Devolver componentes.
     return {
         "almacen": almacen,
         "repositorio_usuarios": repositorio_usuarios,
         "repositorio_amistades": repositorio_amistades,
         "repositorio_publicaciones": repositorio_publicaciones,
         "sesion": sesion,
+        "registrador": registrador,
         "autenticacion": servicio_autenticacion,
         "social": servicio_social,
         "publicaciones": servicio_publicaciones,
