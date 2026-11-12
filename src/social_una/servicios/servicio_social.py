@@ -43,33 +43,44 @@ class ServicioSocial(ConsultaAmistades):
         self._cargar_amistades()
 
     def _registrar_evento(self, mensaje: str) -> None:
-        """Registra un evento social si hay un registrador configurado."""
+        """Registra un evento sin interrumpir la operacion social."""
 
-        if self._registrador is not None:
+        if self._registrador is None:
+            return
+
+        try:
             self._registrador.info(mensaje)
+        except OSError:
+            # Un fallo del registro no debe interrumpir el servicio.
+            pass
 
     def _cargar_amistades(self) -> None:
         """Carga las amistades desde el repositorio al grafo."""
+
         pares = self._repositorio.cargar_todo()
         self._grafo.cargar_pares(pares)
 
     def _guardar_amistades(self) -> None:
         """Guarda las amistades actuales en el repositorio."""
+
         pares = self._grafo.exportar_pares()
         self._repositorio.guardar_todo(pares)
 
     def _usuario_actual(self) -> Usuario:
-        """Devuelve el usuario con sesión iniciada."""
+        """Devuelve el usuario con sesion iniciada."""
+
         return self._sesion.usuario_actual()
 
-    # --- Implementación de ConsultaAmistades ---
+    # --- Implementacion de ConsultaAmistades ---
 
     def obtener_ids_amigos(self, id_usuario: int) -> set[int]:
         """Devuelve los IDs de amigos del usuario indicado."""
+
         return self._grafo.obtener_amigos(id_usuario)
 
     def son_amigos(self, id_a: int, id_b: int) -> bool:
         """Indica si dos usuarios son amigos."""
+
         return self._grafo.son_amigos(id_a, id_b)
 
     # --- Funcionalidades propias de M2 ---
@@ -78,7 +89,7 @@ class ServicioSocial(ConsultaAmistades):
         """
         Busca usuarios por nombre o nombre de usuario.
 
-        Excluye al usuario activo y marca quiénes ya son amigos.
+        Excluye al usuario activo y marca quienes ya son amigos.
         """
 
         usuario_activo = self._usuario_actual()
