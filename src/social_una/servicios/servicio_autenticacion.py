@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+import logging
 from datetime import datetime, timezone
 
 from social_una.dominio.contratos import (
@@ -16,6 +17,7 @@ from social_una.dominio.modelos import Usuario
 from social_una.estructuras.catalogo_usuarios import CatalogoUsuarios
 from social_una.servicios.sesion import Sesion
 
+
 class ServicioAutenticacion(DirectorioUsuarios):
     """Gestiona el registro, inicio y cierre de sesion."""
 
@@ -24,16 +26,29 @@ class ServicioAutenticacion(DirectorioUsuarios):
     def __init__(
         self,
         repositorio: RepositorioUsuarios,
-        sesion: Sesion
+        sesion: Sesion,
+        registrador: logging.Logger | None = None,
     ):
         self._repositorio = repositorio
         self._sesion = sesion
         self._catalogo = CatalogoUsuarios()
+        self._registrador = registrador
 
         usuarios = self._repositorio.cargar_todo()
 
         for usuario in usuarios:
             self._catalogo.agregar(usuario)
+
+    def _registrar_evento(self, nivel: str, mensaje: str) -> None:
+        """Registra un evento si hay un registrador configurado."""
+
+        if self._registrador is None:
+            return
+
+        if nivel == "warning":
+            self._registrador.warning(mensaje)
+        else:
+            self._registrador.info(mensaje)
 
     def registrar(
         self,
@@ -86,6 +101,11 @@ class ServicioAutenticacion(DirectorioUsuarios):
         self._repositorio.guardar_todo(usuarios_actualizados)
         self._catalogo.agregar(usuario)
 
+        self._registrar_evento(
+            "info",
+            f"Registro exitoso | ID usuario: {usuario.id_usuario}",
+        )
+
         return usuario
 
     def iniciar_sesion(
@@ -96,6 +116,10 @@ class ServicioAutenticacion(DirectorioUsuarios):
         """Verifica las credenciales e inicia la sesion."""
 
         if not nombre_usuario or not nombre_usuario.strip() or not contrasena:
+            self._registrar_evento(
+                "warning",
+                "Inicio de sesion fallido | Datos incompletos",
+            )
             raise ErrorAutenticacion(
                 "Debe ingresar el usuario y la contrasena."
             )
@@ -105,6 +129,10 @@ class ServicioAutenticacion(DirectorioUsuarios):
         )
 
         if usuario is None:
+            self._registrar_evento(
+                "warning",
+                "Inicio de sesion fallido | Usuario no encontrado",
+            )
             raise ErrorAutenticacion(
                 "El usuario o la contrasena son incorrectos."
             )
@@ -120,17 +148,39 @@ class ServicioAutenticacion(DirectorioUsuarios):
             hash_ingresado,
             usuario.hash_contrasena
         ):
+            self._registrar_evento(
+                "warning",
+                "Inicio de sesion fallido | Credenciales incorrectas",
+            )
             raise ErrorAutenticacion(
                 "El usuario o la contrasena son incorrectos."
             )
 
         self._sesion.iniciar(usuario)
+
+        self._registrar_evento(
+            "info",
+            f"Inicio de sesion exitoso | ID usuario: {usuario.id_usuario}",
+        )
+
         return usuario
 
     def cerrar_sesion(self):
         """Cierra la sesion actual."""
 
+        try:
+            usuario = self._sesion.usuario_actual()
+            id_usuario = usuario.id_usuario
+        except ErrorAutenticacion:
+            id_usuario = None
+
         self._sesion.cerrar()
+
+        if id_usuario is not None:
+            self._registrar_evento(
+                "info",
+                f"Cierre de sesion | ID usuario: {id_usuario}",
+            )
 
     def obtener_por_id(self, id_usuario: int) -> Usuario:
         """Obtiene un usuario mediante su identificador."""
