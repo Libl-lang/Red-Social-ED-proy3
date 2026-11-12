@@ -10,19 +10,23 @@ from tkinter import ttk
 
 from social_una.dominio.errores import ErrorSocialUna
 from social_una.dominio.modelos import Usuario
-from social_una.interfaz.alertas import mostrar_error, mostrar_informacion
+from social_una.interfaz.alertas import (
+    mostrar_error,
+    mostrar_informacion,
+)
 from social_una.servicios.servicio_social import ServicioSocial
 
 
-class VistaSocial:
+class VistaSocial(ttk.Frame):
     """Interfaz para las operaciones sociales del usuario activo."""
 
     def __init__(
         self,
-        root: tk.Tk | tk.Toplevel,
+        padre: tk.Misc,
         servicio: ServicioSocial,
     ) -> None:
-        self._root = root
+        super().__init__(padre)
+
         self._servicio = servicio
 
         self._crear_interfaz()
@@ -32,9 +36,9 @@ class VistaSocial:
     def _crear_interfaz(self) -> None:
         """Construye los paneles de búsqueda, resultados y amistades."""
 
-        # Panel superior: búsqueda
+        # Panel superior: búsqueda.
         frame_buscar = ttk.LabelFrame(
-            self._root,
+            self,
             text="Buscar personas",
             padding=10,
         )
@@ -55,6 +59,7 @@ class VistaSocial:
             fill=tk.X,
             expand=True,
         )
+
         self._entrada_busqueda.bind(
             "<KeyRelease>",
             self._on_buscar,
@@ -76,9 +81,9 @@ class VistaSocial:
             command=self._limpiar_busqueda,
         ).pack(side=tk.LEFT, padx=(5, 0))
 
-        # Panel central: resultados
+        # Panel central: resultados.
         frame_resultados = ttk.LabelFrame(
-            self._root,
+            self,
             text="Personas encontradas",
             padding=10,
         )
@@ -102,13 +107,19 @@ class VistaSocial:
         self._lista_resultados.heading("estado", text="Estado")
 
         self._lista_resultados.column(
-            "nombre", width=220, anchor=tk.W
+            "nombre",
+            width=220,
+            anchor=tk.W,
         )
         self._lista_resultados.column(
-            "usuario", width=160, anchor=tk.W
+            "usuario",
+            width=160,
+            anchor=tk.W,
         )
         self._lista_resultados.column(
-            "estado", width=120, anchor=tk.CENTER
+            "estado",
+            width=120,
+            anchor=tk.CENTER,
         )
 
         self._lista_resultados.pack(
@@ -134,9 +145,9 @@ class VistaSocial:
             command=self._agregar_amigo_seleccionado,
         ).pack(side=tk.BOTTOM, pady=(8, 0))
 
-        # Panel inferior: lista de amigos
+        # Panel inferior: lista de amigos.
         frame_amigos = ttk.LabelFrame(
-            self._root,
+            self,
             text="Mis amigos",
             padding=10,
         )
@@ -176,9 +187,9 @@ class VistaSocial:
             command=self._refrescar_amigos,
         ).pack(side=tk.BOTTOM, pady=(8, 0))
 
-        # Barra inferior de estado
+        # Barra inferior de estado.
         self._etiqueta_estado = ttk.Label(
-            self._root,
+            self,
             text="Listo.",
             relief=tk.SUNKEN,
             anchor=tk.W,
@@ -195,14 +206,21 @@ class VistaSocial:
 
     def _on_buscar(self, event: tk.Event) -> None:
         """Actualiza los resultados mientras se escribe."""
-        self._mostrar_resultados(self._entrada_busqueda.get())
+
+        self._mostrar_resultados(
+            self._entrada_busqueda.get()
+        )
 
     def _buscar_manual(self, event=None) -> None:
         """Ejecuta la búsqueda mediante el botón o Enter."""
-        self._mostrar_resultados(self._entrada_busqueda.get())
+
+        self._mostrar_resultados(
+            self._entrada_busqueda.get()
+        )
 
     def _limpiar_busqueda(self) -> None:
         """Limpia el texto y vuelve a mostrar los usuarios."""
+
         self._entrada_busqueda.delete(0, tk.END)
         self._mostrar_resultados("")
 
@@ -214,6 +232,7 @@ class VistaSocial:
 
         try:
             resultados = self._servicio.buscar_usuarios(texto)
+
         except ErrorSocialUna as error:
             mostrar_error(str(error))
             self._etiqueta_estado.config(
@@ -225,7 +244,11 @@ class VistaSocial:
             usuario: Usuario = resultado["usuario"]
             es_amigo: bool = resultado["es_amigo"]
 
-            estado = "Ya es amigo" if es_amigo else "No es amigo"
+            estado = (
+                "Ya es amigo"
+                if es_amigo
+                else "No es amigo"
+            )
 
             self._lista_resultados.insert(
                 "",
@@ -238,10 +261,8 @@ class VistaSocial:
                 ),
             )
 
-        cantidad = len(resultados)
-
         self._etiqueta_estado.config(
-            text=f"Resultados encontrados: {cantidad}"
+            text=f"Resultados encontrados: {len(resultados)}"
         )
 
     # --------------------------------------------------
@@ -274,6 +295,7 @@ class VistaSocial:
 
         try:
             self._servicio.agregar_amigo(id_amigo)
+
         except ErrorSocialUna as error:
             mostrar_error(str(error))
             return
@@ -298,6 +320,7 @@ class VistaSocial:
 
         try:
             amigos = self._servicio.listar_mis_amigos()
+
         except ErrorSocialUna as error:
             mostrar_error(str(error))
             self._etiqueta_estado.config(
@@ -312,5 +335,8 @@ class VistaSocial:
             )
 
         self._etiqueta_estado.config(
-            text=f"Tu lista de amigos contiene {len(amigos)} personas."
+            text=(
+                f"Tu lista de amigos contiene "
+                f"{len(amigos)} personas."
+            )
         )
