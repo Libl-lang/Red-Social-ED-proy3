@@ -86,14 +86,17 @@ class VentanaPrincipal(tk.Toplevel):
         )
         contenido.pack(fill="both", expand=True)
 
-        # Encabezado.
-        tk.Label(
+        self._etiqueta_bienvenida = tk.Label(
             contenido,
             text="Bienvenido a Social UNA",
             bg="#eef2f7",
             fg="#17365d",
             font=("Arial", 22, "bold"),
-        ).pack(anchor="w", pady=(5, 8))
+        )
+        self._etiqueta_bienvenida.pack(
+            anchor="w",
+            pady=(5, 8),
+        )
 
         tk.Label(
             contenido,
@@ -165,12 +168,11 @@ class VentanaPrincipal(tk.Toplevel):
             expand=True,
         )
 
-        # Nota informativa.
         tk.Label(
             contenido,
             text=(
                 "Seleccione una seccion para ver su contenido. "
-                "Las vistas se refrescan al cambiar de pestaña."
+                "Las vistas se refrescan al cambiar de seccion."
             ),
             bg="#eef2f7",
             fg="#64748b",
@@ -212,14 +214,11 @@ class VentanaPrincipal(tk.Toplevel):
 
         self._limpiar_area_contenido()
 
+        # VistaSocial coloca sus propios componentes dentro del contenedor.
+        # No necesita llamar a pack() sobre el objeto VistaSocial.
         self._vista_social = VistaSocial(
             self._area_contenido,
             self._servicio_social,
-        )
-
-        self._vista_social.pack(
-            fill="both",
-            expand=True,
         )
 
         self.title("Social UNA - Amistades")
@@ -266,4 +265,3 @@ class VentanaPrincipal(tk.Toplevel):
                 f"No se pudo cerrar la sesion: {error}",
                 parent=self,
             )
-
