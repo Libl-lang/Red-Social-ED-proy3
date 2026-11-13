@@ -1,0 +1,26 @@
+[
+  {
+    "id_usuario": 1,
+    "nombre": "Eduardo Sanchez",
+    "nombre_usuario": "Pampleto",
+    "hash_contrasena": "7853acfd1c7c8ea99c7c753d631336d9437a54506cb7473a8a8ff1e86fc8516e",
+    "sal": "13b3a08c15b0da1193abf2103303babe",
+    "fecha_registro": "2026-11-12T23:45:04.236224+00:00"
+  },
+  {
+    "id_usuario": 2,
+    "nombre": "John Doom",
+    "nombre_usuario": "Doomguy",
+    "hash_contrasena": "49de0046e09f80427fee4b218f7ad8a5faeaa36e1007df21e7a66ea8f11e035c",
+    "sal": "f98fa4dcf1cb69d24b5576ced2d0b209",
+    "fecha_registro": "2026-11-12T23:48:45.844662+00:00"
+  },
+  {
+    "id_usuario": 3,
+    "nombre": "Shiki tohno",
+    "nombre_usuario": "NanyaShiki",
+    "hash_contrasena": "fa45cbb0df44e3b63ff486c8bd15018d1f1f2bc2ed1ab424c47485013aaf3f8c",
+    "sal": "120f0737b0a9970e17691051dc20becc",
+    "fecha_registro": "2026-11-13T00:02:44.387666+00:00"
+  }
+]

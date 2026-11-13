@@ -73,15 +73,15 @@ def prueba_agregar_amigo_a_si_mismo_lanza_error_validacion():
 
 
 def prueba_agregar_amigo_usuario_inexistente_lanza_error_no_encontrado():
-    """agregar_amigo con id inexistente lanza ErrorNoEncontrado."""
+    """agregar_amigo con id inexistente lanza ErrorValidacion."""
     servicio = _crear_servicio_con_datos(
         iniciales_amistades=[],
         usuario_activo=USUARIOS_FALSOS[0],  # Ana (id=1)
     )
     try:
         servicio.agregar_amigo(99)
-        assert False, "Debia lanzar ErrorNoEncontrado"
-    except ErrorNoEncontrado as e:
+        assert False, "Debia lanzar ErrorValidacion"
+    except ErrorValidacion as e:
         assert "99" in str(e)
 
 

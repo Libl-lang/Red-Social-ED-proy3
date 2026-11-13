@@ -224,6 +224,8 @@ class VentanaPrincipal(tk.Toplevel):
             expand=True,
         )
 
+        self._vista_social.refrescar()
+
         self.title("Social UNA - Amistades")
 
     

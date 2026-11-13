@@ -340,3 +340,17 @@ class VistaSocial(ttk.Frame):
                 f"{len(amigos)} personas."
             )
         )
+
+    # --------------------------------------------------
+    # API pública
+    # --------------------------------------------------
+
+    def refrescar(self) -> None:
+        """Refresca los resultados de búsqueda y la lista de amigos.
+
+        Este método se invoca desde la ventana principal cada vez que el
+        usuario selecciona la pestaña de amistades, para asegurar que los
+        datos se muestran actualizados.
+        """
+        self._mostrar_resultados("")
+        self._refrescar_amigos()

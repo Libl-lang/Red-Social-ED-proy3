@@ -130,7 +130,10 @@ class ServicioSocial(ConsultaAmistades):
                 "No puedes agregarte a ti mismo como amigo."
             )
 
-        self._directorio.obtener_por_id(id_amigo)
+        if not self._directorio.existe(id_amigo):
+            raise ErrorValidacion(
+                f"No existe el usuario con id {id_amigo}."
+            )
 
         if self._grafo.son_amigos(id_activo, id_amigo):
             raise ErrorDuplicado(
@@ -166,3 +169,15 @@ class ServicioSocial(ConsultaAmistades):
 
         usuario_activo = self._usuario_actual()
         ids_amigos = self._grafo.obtener_amigos(usuario_activo.id_usuario)
+
+        amigos: list[Usuario] = []
+        for id_amigo in sorted(ids_amigos):
+            try:
+                amigo = self._directorio.obtener_por_id(id_amigo)
+                amigos.append(amigo)
+            except ErrorNoEncontrado:
+                # El amigo ya no existe en el directorio; lo saltamos para
+                # no romper la lista completa por un usuario huérfano.
+                continue
+
+        return amigos
