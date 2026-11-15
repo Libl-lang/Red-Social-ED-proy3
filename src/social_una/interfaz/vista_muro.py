@@ -432,7 +432,12 @@ class VistaMuro(ttk.Frame):
                 activeforeground="white",
                 font=(FUENTE, 8, "bold"),
                 cursor="hand2",
-            ).pack(side="right", padx=(8, 0))
+            ).pack(
+                side="right",
+                anchor="center",
+                padx=(8, 8),
+                pady=4,
+            )
 
         etiqueta_texto = tk.Label(
             contenido,
