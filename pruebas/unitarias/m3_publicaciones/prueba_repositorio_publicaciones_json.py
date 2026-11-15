@@ -151,7 +151,7 @@ def prueba_contenido_que_no_es_una_lista_lanza_error(repositorio, ruta):
     """Un JSON válido que no es una lista de publicaciones lanza ErrorAlmacenamiento."""
     # Preparar: un objeto JSON válido, pero no una lista
     ruta.write_text('{"a": 1}', encoding="utf-8")
-    with pytest.raises(ErrorAlmacenamiento, match="formato esperado"):
+    with pytest.raises(ErrorAlmacenamiento, match="debe contener una lista"):
         repositorio.cargar_todo()
 
 

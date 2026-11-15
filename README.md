@@ -69,10 +69,12 @@ Red-Social-ED-proy3/
 │       │   └── servicio_publicaciones.py
 │       └── interfaz/
 │           ├── alertas.py
+│           ├── iconos.py
 │           ├── ventana_principal.py
 │           ├── vista_autenticacion.py
 │           ├── vista_social.py
-│           └── vista_muro.py
+│           ├── vista_muro.py
+│           └── recursos/iconos/       # PNG extraídos de la referencia visual
 └── pruebas/
     ├── falsos/                      # 🛡️ Piezas falsas para pruebas unitarias (NO modificar)
     │   ├── directorio_usuarios_falso.py
@@ -132,14 +134,16 @@ Se refactorizó para almacenar las referencias de los widgets (`_lista_amigos`, 
 ### M2 — Social (`servicio_social.py`, `grafo_amistades.py`)
 
 - `ServicioSocial` implementa `ConsultaAmistades`: `obtener_ids_amigos(id)`, `son_amigos(id_a, id_b)`.
-- Operaciones propias: `buscar_usuarios(texto)`, `agregar_amigo(id_amigo)`, `listar_mis_amigos()`.
+- Operaciones propias: `buscar_usuarios(texto)`, `agregar_amigo(id_amigo)`, `eliminar_amigo(id_amigo)`, `listar_mis_amigos()`.
 - `GrafoAmistades` es un grafo no dirigido con lista de adyacencia; cada amistad se guarda en ambos sentidos y se exporta una sola vez con `id_a < id_b`.
 
 ### M3 — Publicaciones (`servicio_publicaciones.py`, `historial_publicaciones.py`)
 
-- `ServicioPublicaciones`: `publicar(texto)`, `obtener_muro()`, `obtener_muro_personal()`, `obtener_nombre_autor(id_autor)`.
+- `ServicioPublicaciones`: `publicar(texto)`, `eliminar_publicacion(id_publicacion)`, `puede_eliminar_publicacion(publicacion)`, `obtener_muro()`, `obtener_muro_personal()`, `obtener_nombre_autor(id_autor)`.
 - El muro incluye publicaciones propias y de amigos, ordenadas de la más reciente a la más antigua.
-- `HistorialPublicaciones` mantiene el orden de inserción y calcula el siguiente ID disponible.
+- `HistorialPublicaciones` mantiene el orden de inserción, elimina por ID y calcula el siguiente ID disponible.
+
+La interfaz carga desde `interfaz/recursos/iconos/` los seis PNG del módulo de amistades: `amistades`, `mis_amistades`, `busqueda`, `agregar`, `eliminar` y `actualizar`. La tarjeta de bienvenida compartida carga `bienvenida.png`. Los botones de eliminación de amistades y publicaciones solicitan confirmación; el servicio de publicaciones solo permite eliminar contenido del usuario con sesión iniciada.
 
 ## Reglas de persistencia y datos
 

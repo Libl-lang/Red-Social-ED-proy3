@@ -15,6 +15,7 @@ from social_una.interfaz.alertas import (
     mostrar_error,
     mostrar_informacion,
 )
+from social_una.interfaz.iconos import cargar_icono
 from social_una.servicios.servicio_social import ServicioSocial
 
 
@@ -27,64 +28,6 @@ COLOR_TEXTO_SUAVE = "#536B87"
 COLOR_AVATAR_AZUL = "#D9EAFB"
 COLOR_AVATAR_ROJO = "#FBE1E5"
 FUENTE = "Segoe UI"
-
-
-def _dibujar_persona(
-    lienzo: tk.Canvas,
-    centro_x: float,
-    centro_y: float,
-    escala: float,
-    color: str,
-) -> None:
-    """Dibuja una silueta simétrica con cabeza circular y hombros."""
-    radio = 4.2 * escala
-    cabeza_y = centro_y - 7 * escala
-    lienzo.create_oval(
-        centro_x - radio,
-        cabeza_y - radio,
-        centro_x + radio,
-        cabeza_y + radio,
-        fill=color,
-        outline="",
-    )
-    puntos_cuerpo = (
-        centro_x - 3 * escala, centro_y - 3 * escala,
-        centro_x - 3 * escala, centro_y,
-        centro_x - 7 * escala, centro_y + escala,
-        centro_x - 10 * escala, centro_y + 4 * escala,
-        centro_x - 12 * escala, centro_y + 8 * escala,
-        centro_x - 12 * escala, centro_y + 14 * escala,
-        centro_x + 12 * escala, centro_y + 14 * escala,
-        centro_x + 12 * escala, centro_y + 8 * escala,
-        centro_x + 10 * escala, centro_y + 4 * escala,
-        centro_x + 7 * escala, centro_y + escala,
-        centro_x + 3 * escala, centro_y,
-        centro_x + 3 * escala, centro_y - 3 * escala,
-    )
-    lienzo.create_polygon(
-        *puntos_cuerpo,
-        fill=color,
-        outline="",
-    )
-
-
-def _dibujar_grupo(
-    lienzo: tk.Canvas,
-    ancho: int,
-    alto: int,
-    color: str,
-) -> None:
-    escala = min((ancho - 4) / 52, (alto - 4) / 26)
-    centro_x = ancho / 2
-    centro_y = alto / 2
-    for desplazamiento in (-14, 14):
-        _dibujar_persona(
-            lienzo,
-            centro_x + desplazamiento * escala,
-            centro_y,
-            escala,
-            color,
-        )
 
 
 class _PanelDesplazable(tk.Frame):
@@ -175,6 +118,14 @@ class VistaSocial(ttk.Frame):
         self._servicio = servicio
         self._resultados = {}
         self._amigos = []
+        self._iconos = {
+            "amistades": cargar_icono(self, "amistades", 2),
+            "mis_amistades": cargar_icono(self, "mis_amistades", 3),
+            "busqueda": cargar_icono(self, "busqueda", 3),
+            "agregar": cargar_icono(self, "agregar", 3),
+            "eliminar": cargar_icono(self, "eliminar", 3),
+            "actualizar": cargar_icono(self, "actualizar", 3),
+        }
 
         self._crear_interfaz()
         self._mostrar_resultados("")
@@ -283,15 +234,11 @@ class VistaSocial(ttk.Frame):
             fill="y",
         )
 
-        icono = tk.Canvas(
+        tk.Label(
             encabezado,
-            width=66,
-            height=68,
+            image=self._iconos["amistades"],
             bg="white",
-            highlightthickness=0,
-        )
-        icono.pack(side="left", padx=(12, 4), pady=8)
-        _dibujar_grupo(icono, 66, 68, COLOR_ROJO)
+        ).pack(side="left", padx=(12, 4), pady=8)
 
         texto = tk.Frame(encabezado, bg="white")
         texto.pack(side="left", fill="both", expand=True, pady=12)
@@ -329,24 +276,11 @@ class VistaSocial(ttk.Frame):
             padx=(12, 8),
             pady=9,
         )
-        icono_busqueda = tk.Canvas(
+        tk.Label(
             campo,
-            width=22,
-            height=22,
+            image=self._iconos["busqueda"],
             bg="#F8FAFC",
-            highlightthickness=0,
-        )
-        icono_busqueda.pack(side="left", padx=(8, 4))
-        icono_busqueda.create_oval(
-            3, 3, 14, 14,
-            outline=COLOR_TEXTO_SUAVE,
-            width=2,
-        )
-        icono_busqueda.create_line(
-            13, 13, 19, 19,
-            fill=COLOR_TEXTO_SUAVE,
-            width=2,
-        )
+        ).pack(side="left", padx=(8, 4))
 
         self._entrada_busqueda = ttk.Entry(
             campo,
@@ -379,19 +313,13 @@ class VistaSocial(ttk.Frame):
         cabecera = tk.Frame(panel.contenido, bg="white")
         cabecera.pack(fill="x", padx=14, pady=(12, 0))
 
-        icono = tk.Canvas(
+        clave_icono = "busqueda" if tipo == "buscar" else "mis_amistades"
+        etiqueta_icono = tk.Label(
             cabecera,
-            width=34,
-            height=34,
+            image=self._iconos[clave_icono],
             bg="white",
-            highlightthickness=0,
         )
-        icono.pack(side="left", padx=(0, 8))
-        if tipo == "buscar":
-            icono.create_oval(5, 5, 23, 23, outline=COLOR_ROJO, width=2)
-            icono.create_line(20, 20, 29, 29, fill=COLOR_ROJO, width=3)
-        else:
-            _dibujar_grupo(icono, 34, 34, COLOR_ROJO)
+        etiqueta_icono.pack(side="left", padx=(0, 8))
 
         tk.Label(
             cabecera,
@@ -407,6 +335,8 @@ class VistaSocial(ttk.Frame):
                 text="Actualizar",
                 style="SocialFriends.Subtle.TButton",
                 command=self._refrescar_amigos,
+                image=self._iconos["actualizar"],
+                compound="left",
             )
             self._btn_actualizar_amigos.pack(side="right")
 
@@ -593,6 +523,8 @@ class VistaSocial(ttk.Frame):
                 command=lambda id_usuario=usuario.id_usuario: (
                     self._seleccionar_y_agregar(id_usuario)
                 ),
+                image=self._iconos["agregar"],
+                compound="left",
             ).grid(row=0, column=2, rowspan=2, padx=(8, 4))
 
         tk.Frame(contenedor, bg="#D8E3EF", height=1).pack(
@@ -606,34 +538,11 @@ class VistaSocial(ttk.Frame):
         usuario: Usuario,
     ) -> None:
         comando = lambda: self._al_eliminar_amigo(usuario)
-        boton = tk.Frame(fila, bg=COLOR_ROJO)
-        boton.grid(row=0, column=2, rowspan=2, padx=(8, 4), pady=8)
-
-        icono = tk.Canvas(
-            boton,
-            width=28,
-            height=32,
-            bg=COLOR_ROJO,
-            highlightthickness=0,
-            takefocus=False,
-        )
-        icono.pack(side="left")
-        icono.create_line(8, 9, 20, 9, fill="white", width=2)
-        icono.create_line(11, 6, 17, 6, fill="white", width=2)
-        icono.create_line(12, 4, 16, 4, fill="white", width=2)
-        icono.create_line(
-            10, 12, 11, 25, 17, 25, 18, 12,
-            fill="white",
-            width=2,
-            joinstyle="round",
-        )
-        icono.create_line(13, 14, 13, 22, fill="white", width=1)
-        icono.create_line(15, 14, 15, 22, fill="white", width=1)
-        icono.bind("<Button-1>", lambda _evento: comando())
-
         tk.Button(
-            boton,
+            fila,
             text="Eliminar amigo",
+            image=self._iconos["eliminar"],
+            compound="left",
             command=comando,
             takefocus=True,
             relief="flat",
@@ -646,7 +555,7 @@ class VistaSocial(ttk.Frame):
             activeforeground="white",
             font=(FUENTE, 8, "bold"),
             cursor="hand2",
-        ).pack(side="left")
+        ).grid(row=0, column=2, rowspan=2, padx=(8, 4), pady=8)
 
     def _seleccionar_y_agregar(self, id_usuario: int) -> None:
         iid = str(id_usuario)

@@ -30,6 +30,14 @@ class HistorialPublicaciones:
         # append mantiene el orden de inserción: la nueva queda de última
         self._publicaciones.append(publicacion)
 
+    def eliminar(self, id_publicacion: int) -> bool:
+        """Elimina una publicación por id y devuelve si existía."""
+        for indice, publicacion in enumerate(self._publicaciones):
+            if publicacion.id_publicacion == id_publicacion:
+                del self._publicaciones[indice]
+                return True
+        return False
+
     def obtener_por_autor(self, id_autor: int) -> list[Publicacion]:
         """Devuelve las publicaciones de un solo autor, en el orden guardado."""
         # Recorre cada publicación y conserva solo las del autor pedido

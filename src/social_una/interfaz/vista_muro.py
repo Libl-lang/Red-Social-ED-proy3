@@ -11,7 +11,9 @@ from datetime import datetime
 from tkinter import ttk
 
 from social_una.dominio.errores import ErrorSocialUna
+from social_una.dominio.modelos import Publicacion
 from social_una.interfaz import alertas
+from social_una.interfaz.iconos import cargar_icono
 from social_una.servicios.servicio_publicaciones import (
     LARGO_MAXIMO_PUBLICACION,
     ServicioPublicaciones,
@@ -50,6 +52,9 @@ class VistaMuro(ttk.Frame):
         self._barra_visible = False
         self._ajuste_scroll_programado = None
         self._apilado = False
+        self._iconos = {
+            "eliminar": cargar_icono(self, "eliminar", 3),
+        }
         self._crear_widgets()
 
     def _crear_widgets(self) -> None:
@@ -76,13 +81,13 @@ class VistaMuro(ttk.Frame):
         panel.grid_propagate(False)
 
         self._botones_modo.clear()
-        for texto, valor, icono in (
-            ("Muro general", "general", "⌂"),
-            ("Mi muro", "personal", "♙"),
+        for texto, valor in (
+            ("Muro general", "general"),
+            ("Mi muro", "personal"),
         ):
             boton = tk.Radiobutton(
                 panel,
-                text=f"{icono}   {texto}",
+                text=texto,
                 value=valor,
                 variable=self._modo,
                 command=self.refrescar,
@@ -110,7 +115,7 @@ class VistaMuro(ttk.Frame):
 
         tk.Label(
             panel,
-            text="✎   Escribe una publicación",
+            text="Escribe una publicación",
             font=(FUENTE, 11, "bold"),
             bg=COLOR_TARJETA,
             fg=COLOR_TEXTO,
@@ -164,7 +169,7 @@ class VistaMuro(ttk.Frame):
         self._contador.pack(side="left")
         self._btn_publicar = ttk.Button(
             fila,
-            text="➤   Publicar",
+            text="Publicar",
             style="Social.Publish.TButton",
             command=self._al_publicar,
         )
@@ -286,9 +291,9 @@ class VistaMuro(ttk.Frame):
         for publicacion in publicaciones:
             nombre = self._servicio.obtener_nombre_autor(publicacion.id_autor)
             self._crear_tarjeta(
+                publicacion,
                 nombre,
                 self._formatear_fecha(publicacion.fecha_creacion),
-                publicacion.texto,
             )
         # Después de redibujar, el scroll vuelve arriba para ver la más reciente
         self._canvas.yview_moveto(0)
@@ -345,7 +350,12 @@ class VistaMuro(ttk.Frame):
             justify="center",
         ).pack()
 
-    def _crear_tarjeta(self, nombre: str, fecha: str, texto: str) -> None:
+    def _crear_tarjeta(
+        self,
+        publicacion: Publicacion,
+        nombre: str,
+        fecha: str,
+    ) -> None:
         """Dibuja una tarjeta con la inicial del autor, su nombre, la fecha y el texto."""
         tarjeta = tk.Frame(
             self._contenedor,
@@ -382,7 +392,7 @@ class VistaMuro(ttk.Frame):
         avatar.pack(side="left")
 
         datos = tk.Frame(encabezado, bg=COLOR_TARJETA)
-        datos.pack(side="left", padx=(9, 0))
+        datos.pack(side="left", fill="x", expand=True, padx=(9, 0))
         etiqueta_nombre = tk.Label(
             datos,
             text=nombre,
@@ -402,9 +412,31 @@ class VistaMuro(ttk.Frame):
         )
         etiqueta_fecha.pack(anchor="w")
 
+        if self._servicio.puede_eliminar_publicacion(publicacion):
+            tk.Button(
+                encabezado,
+                text="Eliminar publicación",
+                image=self._iconos["eliminar"],
+                compound="left",
+                command=lambda id_publicacion=publicacion.id_publicacion: (
+                    self._al_eliminar_publicacion(id_publicacion)
+                ),
+                takefocus=True,
+                relief="flat",
+                borderwidth=0,
+                padx=4,
+                pady=3,
+                bg=COLOR_ACENTO,
+                fg="white",
+                activebackground=COLOR_ACENTO_OSCURO,
+                activeforeground="white",
+                font=(FUENTE, 8, "bold"),
+                cursor="hand2",
+            ).pack(side="right", padx=(8, 0))
+
         etiqueta_texto = tk.Label(
             contenido,
-            text=texto,
+            text=publicacion.texto,
             font=(FUENTE, 10),
             bg=COLOR_TARJETA,
             fg=COLOR_TEXTO,
@@ -426,6 +458,23 @@ class VistaMuro(ttk.Frame):
             etiqueta_texto,
         ):
             self._enlazar_rueda(widget)
+
+    def _al_eliminar_publicacion(self, id_publicacion: int) -> None:
+        """Confirma y elimina una publicación propia."""
+        if not alertas.confirmar(
+            "¿Deseas eliminar esta publicación? Esta acción no se puede deshacer."
+        ):
+            return
+
+        try:
+            self._servicio.eliminar_publicacion(id_publicacion)
+        except ErrorSocialUna as error:
+            alertas.mostrar_error(str(error))
+            self.refrescar()
+            return
+
+        alertas.mostrar_informacion("La publicación se eliminó correctamente.")
+        self.refrescar()
 
     def _ancho_texto(self) -> int:
         """Devuelve el ancho disponible para el texto de una tarjeta."""

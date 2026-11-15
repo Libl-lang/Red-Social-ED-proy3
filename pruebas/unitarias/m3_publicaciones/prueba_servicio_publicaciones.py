@@ -16,6 +16,10 @@ from datetime import datetime, timezone
 
 import pytest
 
+from social_una.almacenamiento.almacen_json import AlmacenJson
+from social_una.almacenamiento.repositorio_publicaciones_json import (
+    RepositorioPublicacionesJson,
+)
 from pruebas.falsos.consulta_amistades_falsa import ConsultaAmistadesFalsa
 from pruebas.falsos.directorio_usuarios_falso import (
     USUARIOS_FALSOS,
@@ -26,6 +30,7 @@ from pruebas.falsos.sesion_falsa import SesionFalsa
 from social_una.dominio.errores import (
     ErrorAlmacenamiento,
     ErrorAutenticacion,
+    ErrorNoEncontrado,
     ErrorValidacion,
 )
 from social_una.dominio.modelos import Publicacion
@@ -178,6 +183,84 @@ def prueba_si_falla_el_guardado_la_publicacion_no_queda_en_memoria():
     with pytest.raises(ErrorAlmacenamiento):
         servicio.publicar("Hola")
     # Comprobar: Ana sigue con una sola publicación (la 4), sin la nueva
+    assert ids(servicio.obtener_muro_personal()) == [4]
+
+
+def prueba_eliminar_publicacion_propia_actualiza_memoria_y_repositorio():
+    """Ana elimina una publicación propia sin alterar las demás."""
+    servicio, repositorio, _ = crear_servicio()
+
+    servicio.eliminar_publicacion(4)
+
+    assert ids(servicio.obtener_muro_personal()) == []
+    assert ids(servicio.obtener_muro()) == [3, 1]
+    assert ids(repositorio.cargar_todo()) == [1, 2, 3]
+    assert repositorio.veces_guardado == 1
+
+
+def prueba_puede_eliminar_publicacion_solo_para_el_autor_conectado():
+    """La tarjeta solo ofrece la acción de eliminar a quien la publicó."""
+    servicio, _, _ = crear_servicio()
+    publicaciones = crear_publicaciones_de_ejemplo()
+
+    assert servicio.puede_eliminar_publicacion(publicaciones[3]) is True
+    assert servicio.puede_eliminar_publicacion(publicaciones[0]) is False
+
+
+def prueba_eliminar_publicacion_de_otra_persona_es_rechazado():
+    """No se permite eliminar la publicación de un amigo."""
+    servicio, repositorio, _ = crear_servicio()
+
+    with pytest.raises(ErrorValidacion, match="propias"):
+        servicio.eliminar_publicacion(1)
+
+    assert ids(repositorio.cargar_todo()) == [1, 2, 3, 4]
+    assert repositorio.veces_guardado == 0
+
+
+def prueba_eliminar_publicacion_inexistente_no_guarda():
+    """Un identificador desconocido produce ErrorNoEncontrado."""
+    servicio, repositorio, _ = crear_servicio()
+
+    with pytest.raises(ErrorNoEncontrado, match="id 99"):
+        servicio.eliminar_publicacion(99)
+
+    assert repositorio.veces_guardado == 0
+
+
+def prueba_eliminar_publicacion_persistida_se_mantiene_tras_recargar(tmp_path):
+    """La publicación eliminada no reaparece al crear otro servicio."""
+    ruta = tmp_path / "publicaciones.json"
+    repositorio = RepositorioPublicacionesJson(ruta, AlmacenJson())
+    repositorio.guardar_todo(crear_publicaciones_de_ejemplo())
+    sesion = SesionFalsa()
+    servicio = ServicioPublicaciones(
+        repositorio,
+        ConsultaAmistadesFalsa(),
+        DirectorioUsuariosFalso(),
+        sesion,
+    )
+
+    servicio.eliminar_publicacion(4)
+    servicio_recargado = ServicioPublicaciones(
+        repositorio,
+        ConsultaAmistadesFalsa(),
+        DirectorioUsuariosFalso(),
+        sesion,
+    )
+
+    assert ids(servicio_recargado.obtener_muro_personal()) == []
+    assert ids(repositorio.cargar_todo()) == [1, 2, 3]
+
+
+def prueba_falla_al_guardar_eliminacion_conserva_la_publicacion_en_memoria():
+    """Si la escritura falla, el historial todavía contiene la publicación."""
+    repositorio = RepositorioQueFalla(crear_publicaciones_de_ejemplo())
+    servicio, _, _ = crear_servicio(repositorio=repositorio)
+
+    with pytest.raises(ErrorAlmacenamiento):
+        servicio.eliminar_publicacion(4)
+
     assert ids(servicio.obtener_muro_personal()) == [4]
 
 

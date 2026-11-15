@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from social_una.dominio.errores import ErrorSocialUna
+from social_una.interfaz.iconos import cargar_icono
 from social_una.interfaz.vista_muro import VistaMuro
 from social_una.interfaz.vista_social import VistaSocial
 
@@ -24,6 +25,7 @@ class VentanaPrincipal(tk.Toplevel):
         self._servicio_publicaciones = servicio_publicaciones
         self._sesion = sesion
         self._cerrando = False
+        self._icono_bienvenida = cargar_icono(self, "bienvenida")
 
         self.title("Social UNA - Inicio")
         self.configure(bg="#F3F6FA")
@@ -294,23 +296,12 @@ class VentanaPrincipal(tk.Toplevel):
             width=4,
         ).pack(side="left", fill="y")
 
-        icono_usuario = tk.Canvas(
+        tk.Label(
             tarjeta_bienvenida,
-            width=62,
-            height=62,
+            image=self._icono_bienvenida,
             bg="white",
-            highlightthickness=0,
-        )
-        icono_usuario.pack(side="left", padx=(12, 4), pady=8)
-        icono_usuario.create_oval(21, 8, 40, 27, fill="#C8102E", outline="")
-        icono_usuario.create_arc(
-            8, 25, 53, 61,
-            start=0,
-            extent=180,
-            fill="#C8102E",
-            outline="",
-            style=tk.PIESLICE,
-        )
+            bd=0,
+        ).pack(side="left", padx=(12, 4), pady=8)
 
         texto_bienvenida = tk.Frame(tarjeta_bienvenida, bg="white")
         texto_bienvenida.pack(

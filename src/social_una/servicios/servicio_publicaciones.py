@@ -17,7 +17,10 @@ from social_una.dominio.contratos import (
     RepositorioPublicaciones,
     SesionActiva,
 )
-from social_una.dominio.errores import ErrorNoEncontrado, ErrorValidacion
+from social_una.dominio.errores import (
+    ErrorNoEncontrado,
+    ErrorValidacion,
+)
 from social_una.dominio.modelos import Publicacion
 from social_una.estructuras.historial_publicaciones import HistorialPublicaciones
 
@@ -101,6 +104,47 @@ class ServicioPublicaciones:
 
         return publicacion
 
+    def puede_eliminar_publicacion(self, publicacion: Publicacion) -> bool:
+        """Indica si la publicación pertenece al usuario de la sesión."""
+        return (
+            publicacion.id_autor
+            == self._sesion.usuario_actual().id_usuario
+        )
+
+    def eliminar_publicacion(self, id_publicacion: int) -> None:
+        """Elimina una publicación propia y persiste el cambio."""
+        usuario = self._sesion.usuario_actual()
+        publicaciones = self._historial.listar_todas()
+        publicacion = next(
+            (
+                elemento
+                for elemento in publicaciones
+                if elemento.id_publicacion == id_publicacion
+            ),
+            None,
+        )
+        if publicacion is None:
+            raise ErrorNoEncontrado(
+                f"No existe la publicación con id {id_publicacion}."
+            )
+        if publicacion.id_autor != usuario.id_usuario:
+            raise ErrorValidacion(
+                "Solo puedes eliminar tus propias publicaciones."
+            )
+
+        restantes = [
+            elemento
+            for elemento in publicaciones
+            if elemento.id_publicacion != id_publicacion
+        ]
+        self._repositorio.guardar_todo(restantes)
+        self._historial.eliminar(id_publicacion)
+
+        self._registrar_evento(
+            f"Publicación eliminada | ID publicación: {id_publicacion} | "
+            f"ID autor: {usuario.id_usuario}"
+        )
+
     def obtener_muro(self) -> list[Publicacion]:
         """Devuelve publicaciones propias y de amigos."""
 
@@ -152,4 +196,3 @@ class ServicioPublicaciones:
             ),
             reverse=True,
         )
-
