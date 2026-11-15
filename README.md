@@ -185,16 +185,17 @@ Definidos en `src/social_una/dominio/contratos.py`:
 
 ## Cómo ejecutar la aplicación
 
-Desde la raíz del proyecto (`Red-Social-ED-proy3`):
+Desde la raíz del proyecto (`Red-Social-ED-proy3`) en PowerShell:
 
-```bash
-# Opción 1: ejecutar el módulo principal directamente
-python -m src.social_una.principal
-
-# Opción 2: desde la carpeta src
-cd src
+```powershell
+$env:PYTHONPATH = "$PWD/src"
 python -m social_una.principal
 ```
+
+En VS Code, abre la carpeta raíz del proyecto y ejecuta la configuración
+**Social UNA** con F5. La configuración resuelve `src/` para los imports y la
+aplicación determina la carpeta `datos/` desde la ubicación de `principal.py`,
+independientemente del directorio de trabajo.
 
 La aplicación abre primero la ventana de **Acceso** (inicio de sesión / registro). Tras autenticarse, se abre la **Ventana Principal** con dos pestañas: **Publicaciones** y **Amistades**.
 

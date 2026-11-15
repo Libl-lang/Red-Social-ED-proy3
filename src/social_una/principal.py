@@ -1,13 +1,18 @@
+from pathlib import Path
+
 from social_una.composicion import construir_aplicacion
 from social_una.interfaz.vista_autenticacion import VistaAutenticacion
 from social_una.interfaz.ventana_principal import VentanaPrincipal
+
+RAIZ_PROYECTO = Path(__file__).resolve().parents[2]
+RUTA_DATOS = RAIZ_PROYECTO / "datos"
 
 
 def ejecutar_aplicacion():
     """Inicia la aplicacion Social UNA."""
 
     # Construir los servicios reales de M1, M2 y M3.
-    app = construir_aplicacion("datos")
+    app = construir_aplicacion(RUTA_DATOS)
 
     servicio_autenticacion = app["autenticacion"]
     servicio_social = app["social"]

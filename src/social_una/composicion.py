@@ -56,8 +56,8 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
     La interfaz gráfica se construye por separado en principal.py.
     """
 
-    ruta_datos = Path(ruta_datos)
-    ruta_semilla = Path("datos") / "semilla"
+    ruta_datos = Path(ruta_datos).resolve()
+    ruta_semilla = ruta_datos / "semilla"
 
     # 1. Configurar persistencia inicial.
     _configurar_persistencia_inicial(ruta_datos, ruta_semilla)

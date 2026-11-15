@@ -2,10 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: archivo actual (Social UNA)",
+      "name": "Social UNA",
       "type": "debugpy",
       "request": "launch",
-      "program": "${file}",
+      "module": "social_una.principal",
+      "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}"
