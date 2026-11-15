@@ -1,40 +1,48 @@
-"""Lanzador independiente del modulo de autenticacion M1."""
+"""Lanzador aislado del modulo de autenticacion M1."""
 
-from social_una.composicion import crear_servicios
+import tempfile
+
+from social_una.composicion import construir_aplicacion
 from social_una.interfaz.vista_autenticacion import VistaAutenticacion
 from social_una.interfaz.ventana_principal import VentanaPrincipal
 
-def ejecutar_autenticacion():
-    """Ejecuta el modulo de autenticacion de Social UNA."""
 
-    servicios = crear_servicios()
-    servicio_autenticacion = servicios["autenticacion"]
+def ejecutar_autenticacion() -> None:
+    """Ejecuta la interfaz con datos temporales de desarrollo."""
 
-    ventana_acceso = None
-    ventana_principal = None
+    with tempfile.TemporaryDirectory(
+        prefix="social_una_autenticacion_"
+    ) as temporal:
+        app = construir_aplicacion(temporal)
+        servicio_autenticacion = app["autenticacion"]
 
-    def abrir_ventana_principal(usuario):
-        """Abre la ventana principal despues del inicio de sesion."""
-        nonlocal ventana_principal
+        def abrir_ventana_principal(_usuario) -> None:
+            """Abre la ventana principal usando la sesión autenticada."""
 
-        ventana_principal = VentanaPrincipal(
-            ventana_acceso,
-            usuario,
-            servicio_autenticacion,
-            volver_al_login
-        )
+            _ = _usuario
+            VentanaPrincipal(
+                ventana_acceso,
+                servicio_autenticacion,
+                app["social"],
+                app["publicaciones"],
+                app["sesion"],
+            )
 
-    def volver_al_login():
-        """Regresa a la pantalla de inicio de sesion."""
-        ventana_acceso.deiconify()
-        ventana_acceso.mostrar_login()
-
-    ventana_acceso = VistaAutenticacion(
-        servicio_autenticacion,
-        abrir_ventana_principal
-    )
-
-    ventana_acceso.mainloop()
+        try:
+            ventana_acceso = VistaAutenticacion(
+                servicio_autenticacion,
+                abrir_ventana_principal,
+            )
+            ventana_acceso.mainloop()
+        finally:
+            try:
+                if app["sesion"].hay_sesion_iniciada():
+                    servicio_autenticacion.cerrar_sesion()
+            finally:
+                registrador = app["registrador"]
+                for manejador in registrador.handlers[:]:
+                    registrador.removeHandler(manejador)
+                    manejador.close()
 
 
 if __name__ == "__main__":
