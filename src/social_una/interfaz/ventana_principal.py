@@ -191,7 +191,7 @@ class VentanaPrincipal(tk.Toplevel):
 
         self._btn_cerrar_sesion = ttk.Button(
             acciones_usuario,
-            text="⏻  Cerrar sesión",
+            text="Cerrar sesión",
             style="Social.Logout.TButton",
             command=self._cerrar_sesion,
         )
@@ -221,20 +221,20 @@ class VentanaPrincipal(tk.Toplevel):
         barra_lateral = ttk.Frame(
             cuerpo,
             style="Social.Sidebar.TFrame",
-            width=220,
+            width=260,
         )
         barra_lateral.pack(side="left", fill="y")
         barra_lateral.pack_propagate(False)
 
         ttk.Label(
             barra_lateral,
-            text="☷   NAVEGACIÓN",
+            text="NAVEGACIÓN",
             style="Social.SidebarHeading.TLabel",
         ).pack(anchor="w", padx=20, pady=(27, 12))
 
         self._btn_publicaciones = ttk.Button(
             barra_lateral,
-            text="▤   Publicaciones",
+            text="Publicaciones",
             style="Social.NavActive.TButton",
             command=self._mostrar_publicaciones,
         )
@@ -246,7 +246,7 @@ class VentanaPrincipal(tk.Toplevel):
 
         self._btn_amistades = ttk.Button(
             barra_lateral,
-            text="♧   Amistades y búsqueda",
+            text="Amistades y búsqueda",
             style="Social.Nav.TButton",
             command=self._mostrar_amistades,
         )
@@ -264,7 +264,7 @@ class VentanaPrincipal(tk.Toplevel):
 
         tk.Label(
             barra_lateral,
-            text="⌂\n\nConectá con tu comunidad universitaria.",
+            text="Conectá con tu comunidad universitaria.",
             bg="#102A4C",
             fg="#D7E2EF",
             font=("Segoe UI", 9),
@@ -358,11 +358,11 @@ class VentanaPrincipal(tk.Toplevel):
         )
         panel_seccion.pack(fill="both", expand=True)
 
-        encabezado_seccion = tk.Frame(panel_seccion, bg="white")
-        encabezado_seccion.pack(fill="x", padx=18, pady=(11, 0))
+        self._encabezado_seccion = tk.Frame(panel_seccion, bg="white")
+        self._encabezado_seccion.pack(fill="x", padx=18, pady=(11, 0))
 
         icono_seccion = tk.Canvas(
-            encabezado_seccion,
+            self._encabezado_seccion,
             width=29,
             height=29,
             bg="white",
@@ -386,7 +386,7 @@ class VentanaPrincipal(tk.Toplevel):
         )
 
         self._etiqueta_seccion = tk.Label(
-            encabezado_seccion,
+            self._encabezado_seccion,
             text="Publicaciones",
             bg="white",
             fg="#102A4C",
@@ -395,8 +395,8 @@ class VentanaPrincipal(tk.Toplevel):
         )
         self._etiqueta_seccion.pack(side="left", anchor="w")
 
-        linea_seccion = tk.Frame(panel_seccion, bg="#D8E3EF", height=1)
-        linea_seccion.pack(fill="x", padx=18, pady=(10, 0))
+        self._linea_seccion = tk.Frame(panel_seccion, bg="#D8E3EF", height=1)
+        self._linea_seccion.pack(fill="x", padx=18, pady=(10, 0))
         self._acento_seccion = tk.Frame(
             panel_seccion,
             bg="#C8102E",
@@ -610,10 +610,36 @@ class VentanaPrincipal(tk.Toplevel):
         for widget in self._area_contenido.winfo_children():
             widget.destroy()
 
+    def _mostrar_encabezado_seccion(self, visible):
+        if visible:
+            self._encabezado_seccion.pack(
+                fill="x",
+                padx=18,
+                pady=(11, 0),
+                before=self._lienzo_contenido,
+            )
+            self._linea_seccion.pack(
+                fill="x",
+                padx=18,
+                pady=(10, 0),
+                before=self._lienzo_contenido,
+            )
+            self._acento_seccion.pack(
+                anchor="w",
+                padx=18,
+                before=self._lienzo_contenido,
+            )
+            return
+
+        self._encabezado_seccion.pack_forget()
+        self._linea_seccion.pack_forget()
+        self._acento_seccion.pack_forget()
+
     def _mostrar_publicaciones(self):
         """Muestra la vista del muro de publicaciones."""
 
         self._limpiar_area_contenido()
+        self._mostrar_encabezado_seccion(True)
         self._actualizar_navegacion("publicaciones")
         self._etiqueta_seccion.config(text="Publicaciones")
 
@@ -637,6 +663,7 @@ class VentanaPrincipal(tk.Toplevel):
         """Muestra la vista de amistades."""
 
         self._limpiar_area_contenido()
+        self._mostrar_encabezado_seccion(False)
         self._actualizar_navegacion("amistades")
         self._etiqueta_seccion.config(text="Amistades y búsqueda")
 
