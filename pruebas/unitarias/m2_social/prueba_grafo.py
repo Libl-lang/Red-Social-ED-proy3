@@ -35,6 +35,28 @@ def prueba_agregar_varias_amistades():
     assert grafo.obtener_amigos(2) == {1, 3}
     assert grafo.obtener_amigos(3) == {1, 2}
 
+def prueba_eliminar_amistad_quita_ambos_sentidos_y_conserva_las_demas():
+    """Eliminar una arista no dirigida conserva las otras relaciones."""
+    grafo = GrafoAmistades()
+    grafo.cargar_pares([(1, 2), (1, 3), (2, 3)])
+
+    assert grafo.eliminar_amistad(1, 2) is True
+    assert grafo.son_amigos(1, 2) is False
+    assert grafo.son_amigos(2, 1) is False
+    assert grafo.obtener_amigos(1) == {3}
+    assert grafo.obtener_amigos(2) == {3}
+    assert grafo.son_amigos(2, 3) is True
+
+
+def prueba_eliminar_amistad_inexistente_no_cambia_el_grafo():
+    """Eliminar una arista ausente devuelve False y no cambia otras."""
+    grafo = GrafoAmistades()
+    grafo.agregar_amistad(1, 3)
+
+    assert grafo.eliminar_amistad(1, 2) is False
+    assert grafo.son_amigos(1, 3) is True
+    assert grafo.exportar_pares() == [(1, 3)]
+
 
 def prueba_amistad_duplicada_no_causa_error():
     """Agregar la misma amistad dos veces no debe duplicar ni fallar."""

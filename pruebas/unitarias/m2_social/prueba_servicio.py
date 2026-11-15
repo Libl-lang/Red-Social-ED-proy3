@@ -5,8 +5,14 @@ Usa piezas falsas para probar el servicio de forma aislada.
 """
 
 from social_una.dominio.contratos import ConsultaAmistades
-from social_una.dominio.errores import ErrorDuplicado, ErrorNoEncontrado, ErrorValidacion
+from social_una.dominio.errores import (
+    ErrorAlmacenamiento,
+    ErrorDuplicado,
+    ErrorNoEncontrado,
+    ErrorValidacion,
+)
 from social_una.dominio.modelos import Usuario
+from social_una.almacenamiento.repositorio_amistades_json import RepositorioAmistadesJson
 from social_una.servicios.servicio_social import ServicioSocial
 from pruebas.falsos.directorio_usuarios_falso import DirectorioUsuariosFalso, USUARIOS_FALSOS
 from pruebas.falsos.repositorios_en_memoria import RepositorioAmistadesEnMemoria
@@ -57,6 +63,81 @@ def prueba_agregar_amigo_valido():
     assert servicio.son_amigos(2, 1) is True
     # Verificar que se guardo en el repositorio
     assert servicio._repositorio.veces_guardado >= 1
+
+
+def prueba_eliminar_amigo_conserva_usuarios_y_otras_amistades():
+    """Eliminar una relación no afecta cuentas ni amistades distintas."""
+    servicio = _crear_servicio_con_datos(
+        iniciales_amistades=[(1, 2), (1, 3), (2, 3)],
+    )
+    directorio = servicio._directorio
+
+    servicio.eliminar_amigo(2)
+
+    assert servicio.son_amigos(1, 2) is False
+    assert servicio.son_amigos(2, 1) is False
+    assert servicio.son_amigos(1, 3) is True
+    assert servicio.son_amigos(2, 3) is True
+    assert directorio.existe(1) is True
+    assert directorio.existe(2) is True
+    assert directorio.obtener_por_id(1).id_usuario == 1
+    assert directorio.obtener_por_id(2).id_usuario == 2
+    assert servicio._repositorio._datos == [(1, 3), (2, 3)]
+
+
+def prueba_eliminar_amigo_inexistente_no_guarda_cambios():
+    """Eliminar una relación ausente genera un error de dominio."""
+    servicio = _crear_servicio_con_datos(iniciales_amistades=[(1, 3)])
+    guardados = servicio._repositorio.veces_guardado
+
+    try:
+        servicio.eliminar_amigo(2)
+        assert False, "Debia lanzar ErrorNoEncontrado"
+    except ErrorNoEncontrado as error:
+        assert "no existe" in str(error)
+
+    assert servicio.son_amigos(1, 3) is True
+    assert servicio._repositorio.veces_guardado == guardados
+
+
+def prueba_eliminar_amigo_revierte_grafo_si_falla_el_guardado():
+    """Un error al persistir restaura la amistad en memoria."""
+    servicio = _crear_servicio_con_datos(iniciales_amistades=[(1, 2)])
+
+    def fallar_guardado(_pares):
+        raise ErrorAlmacenamiento("No se pudo guardar.")
+
+    servicio._repositorio.guardar_todo = fallar_guardado
+
+    try:
+        servicio.eliminar_amigo(2)
+        assert False, "Debia propagar ErrorAlmacenamiento"
+    except ErrorAlmacenamiento:
+        pass
+
+    assert servicio.son_amigos(1, 2) is True
+    assert servicio.son_amigos(2, 1) is True
+
+
+def prueba_eliminar_amigo_se_persiste_al_recargar_y_se_puede_agregar(tmp_path):
+    """El JSON recargado refleja la eliminación y admite otra alta."""
+    ruta = tmp_path / "amistades.json"
+    repositorio = RepositorioAmistadesJson(ruta)
+    repositorio.guardar_todo([(1, 2), (1, 3)])
+    directorio = DirectorioUsuariosFalso()
+    sesion = SesionFalsa(usuario_inicial=USUARIOS_FALSOS[0])
+
+    servicio = ServicioSocial(repositorio, directorio, sesion)
+    servicio.eliminar_amigo(2)
+    servicio_recargado = ServicioSocial(repositorio, directorio, sesion)
+
+    assert servicio_recargado.son_amigos(1, 2) is False
+    assert servicio_recargado.son_amigos(2, 1) is False
+    assert servicio_recargado.son_amigos(1, 3) is True
+
+    servicio_recargado.agregar_amigo(2)
+    servicio_final = ServicioSocial(repositorio, directorio, sesion)
+    assert servicio_final.son_amigos(1, 2) is True
 
 
 def prueba_agregar_amigo_a_si_mismo_lanza_error_validacion():

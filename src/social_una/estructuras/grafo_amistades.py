@@ -35,6 +35,20 @@ class GrafoAmistades:
         self._adyacencia[id_a].add(id_b)
         self._adyacencia[id_b].add(id_a)
 
+    def eliminar_amistad(self, id_a: int, id_b: int) -> bool:
+        """Elimina la arista no dirigida y devuelve si existía."""
+        id_a = int(id_a)
+        id_b = int(id_b)
+        amigos_a = self._adyacencia.get(id_a, set())
+        amigos_b = self._adyacencia.get(id_b, set())
+        existia = id_b in amigos_a or id_a in amigos_b
+        if not existia:
+            return False
+
+        amigos_a.discard(id_b)
+        amigos_b.discard(id_a)
+        return True
+
     def obtener_amigos(self, id_usuario: int) -> set[int]:
         """
         Devuelve el conjunto de ids de amigos del usuario dado.

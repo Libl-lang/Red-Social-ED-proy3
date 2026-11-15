@@ -18,6 +18,7 @@ from social_una.dominio.contratos import (
 from social_una.dominio.errores import (
     ErrorDuplicado,
     ErrorNoEncontrado,
+    ErrorSocialUna,
     ErrorValidacion,
 )
 from social_una.dominio.modelos import Usuario
@@ -162,6 +163,33 @@ class ServicioSocial(ConsultaAmistades):
         self._registrar_evento(
             f"Amistad agregada | Usuario: {id_activo} | "
             f"Nuevo amigo: {id_amigo}"
+        )
+
+    def eliminar_amigo(self, id_amigo: int) -> None:
+        """Elimina la amistad del usuario activo con el usuario indicado."""
+        usuario_activo = self._usuario_actual()
+        id_activo = usuario_activo.id_usuario
+        id_amigo = int(id_amigo)
+
+        if id_amigo == id_activo:
+            raise ErrorValidacion(
+                "No puedes eliminarte a ti mismo de tu lista de amigos."
+            )
+
+        if not self._grafo.eliminar_amistad(id_activo, id_amigo):
+            raise ErrorNoEncontrado(
+                f"La amistad con el usuario {id_amigo} ya no existe."
+            )
+
+        try:
+            self._guardar_amistades()
+        except ErrorSocialUna:
+            self._grafo.agregar_amistad(id_activo, id_amigo)
+            raise
+
+        self._registrar_evento(
+            f"Amistad eliminada | Usuario: {id_activo} | "
+            f"Amigo: {id_amigo}"
         )
 
     def listar_mis_amigos(self) -> list[Usuario]:

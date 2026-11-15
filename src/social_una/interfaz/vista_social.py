@@ -11,6 +11,7 @@ from tkinter import ttk
 from social_una.dominio.errores import ErrorSocialUna
 from social_una.dominio.modelos import Usuario
 from social_una.interfaz.alertas import (
+    confirmar,
     mostrar_error,
     mostrar_informacion,
 )
@@ -599,6 +600,54 @@ class VistaSocial(ttk.Frame):
             padx=14,
         )
 
+    def _crear_boton_eliminar(
+        self,
+        fila: tk.Misc,
+        usuario: Usuario,
+    ) -> None:
+        comando = lambda: self._al_eliminar_amigo(usuario)
+        boton = tk.Frame(fila, bg=COLOR_ROJO)
+        boton.grid(row=0, column=2, rowspan=2, padx=(8, 4), pady=8)
+
+        icono = tk.Canvas(
+            boton,
+            width=28,
+            height=32,
+            bg=COLOR_ROJO,
+            highlightthickness=0,
+            takefocus=False,
+        )
+        icono.pack(side="left")
+        icono.create_line(8, 9, 20, 9, fill="white", width=2)
+        icono.create_line(11, 6, 17, 6, fill="white", width=2)
+        icono.create_line(12, 4, 16, 4, fill="white", width=2)
+        icono.create_line(
+            10, 12, 11, 25, 17, 25, 18, 12,
+            fill="white",
+            width=2,
+            joinstyle="round",
+        )
+        icono.create_line(13, 14, 13, 22, fill="white", width=1)
+        icono.create_line(15, 14, 15, 22, fill="white", width=1)
+        icono.bind("<Button-1>", lambda _evento: comando())
+
+        tk.Button(
+            boton,
+            text="Eliminar amigo",
+            command=comando,
+            takefocus=True,
+            relief="flat",
+            borderwidth=0,
+            padx=4,
+            pady=7,
+            bg=COLOR_ROJO,
+            fg="white",
+            activebackground="#A90E27",
+            activeforeground="white",
+            font=(FUENTE, 8, "bold"),
+            cursor="hand2",
+        ).pack(side="left")
+
     def _seleccionar_y_agregar(self, id_usuario: int) -> None:
         iid = str(id_usuario)
         if self._lista_resultados.exists(iid):
@@ -733,6 +782,27 @@ class VistaSocial(ttk.Frame):
         )
         self._refrescar_amigos()
 
+    def _al_eliminar_amigo(self, usuario: Usuario) -> None:
+        """Confirma y elimina la relación, luego actualiza ambas listas."""
+        if not confirmar(
+            f"¿Deseas eliminar a {usuario.nombre} de tus amistades?"
+        ):
+            return
+
+        try:
+            self._servicio.eliminar_amigo(usuario.id_usuario)
+        except ErrorSocialUna as error:
+            mostrar_error(str(error))
+            self._mostrar_resultados(self._entrada_busqueda.get())
+            self._refrescar_amigos()
+            return
+
+        mostrar_informacion(
+            f"{usuario.nombre} se eliminó de tu lista de amistades."
+        )
+        self._mostrar_resultados(self._entrada_busqueda.get())
+        self._refrescar_amigos()
+
     # --------------------------------------------------
     # Lista de amigos
     # --------------------------------------------------
@@ -793,21 +863,7 @@ class VistaSocial(ttk.Frame):
                 anchor="w",
             ).grid(row=1, column=1, sticky="nw", pady=(0, 8))
             fila.grid_columnconfigure(1, weight=1)
-            icono_amigos = tk.Canvas(
-                fila,
-                width=30,
-                height=30,
-                bg="white",
-                highlightthickness=0,
-            )
-            icono_amigos.grid(row=0, column=2, rowspan=2, padx=(8, 6))
-            _dibujar_persona(
-                icono_amigos,
-                15,
-                14,
-                0.9,
-                COLOR_ROJO,
-            )
+            self._crear_boton_eliminar(fila, usuario)
             tk.Frame(self._filas_amigos, bg="#D8E3EF", height=1).pack(
                 fill="x",
                 padx=14,
