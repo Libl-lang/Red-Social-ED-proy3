@@ -209,3 +209,10 @@ class ServicioSocial(ConsultaAmistades):
                 continue
 
         return amigos
+
+    def actualizar_amistades_en_memoria(
+        self,
+        pares: list[tuple[int, int]],
+    ) -> None:
+        """Sincroniza el grafo después de una persistencia conjunta."""
+        self._grafo.cargar_pares(pares)

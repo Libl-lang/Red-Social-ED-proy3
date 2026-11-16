@@ -25,3 +25,6 @@ class ErrorAutenticacion(ErrorSocialUna):
 class ErrorAlmacenamiento(ErrorSocialUna):
     """Un archivo de datos no se pudo leer o está corrupto."""
 
+
+class ErrorRecuperacionTransaccion(ErrorAlmacenamiento):
+    """Una transacción JSON incompleta no pudo recuperarse de forma segura."""

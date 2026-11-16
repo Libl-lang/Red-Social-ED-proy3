@@ -55,6 +55,7 @@ Red-Social-ED-proy3/
 │       │   └── modelos.py     # Usuario, Publicacion
 │       ├── almacenamiento/
 │       │   ├── almacen_json.py                 # Lectura/escritura segura de JSON
+│       │   ├── transaccion_json.py             # Diario y recuperación de cambios conjuntos
 │       │   ├── repositorio_usuarios_json.py
 │       │   ├── repositorio_amistades_json.py
 │       │   └── repositorio_publicaciones_json.py
@@ -65,6 +66,7 @@ Red-Social-ED-proy3/
 │       ├── servicios/
 │       │   ├── sesion.py
 │       │   ├── servicio_autenticacion.py
+│       │   ├── servicio_cuenta.py
 │       │   ├── servicio_social.py
 │       │   └── servicio_publicaciones.py
 │       └── interfaz/
@@ -72,6 +74,7 @@ Red-Social-ED-proy3/
 │           ├── iconos.py
 │           ├── ventana_principal.py
 │           ├── vista_autenticacion.py
+│           ├── vista_perfil.py
 │           ├── vista_social.py
 │           ├── vista_muro.py
 │           └── recursos/iconos/       # PNG extraídos de la referencia visual
@@ -107,7 +110,8 @@ Se reescribió completamente para pasar de un esqueleto parcial (`crear_servicio
 3. **Sesión y ServicioAutenticacion** — Se crea `Sesion()` y `ServicioAutenticacion(repositorio_usuarios, sesion)`, el cual cumple el contrato `DirectorioUsuarios`.
 4. **ServicioSocial** — Se crea inyectándole el repositorio de amistades, el servicio de autenticación y la sesión. Cumple el contrato `ConsultaAmistades`.
 5. **ServicioPublicaciones** — Se crea inyectándole el repositorio de publicaciones, el servicio social, el servicio de autenticación y la sesión.
-6. **VentanaPrincipal** — Se instancia pasándole los tres servicios reales y la sesión.
+6. **ServicioCuenta** — Se conecta a los tres repositorios, servicios de dominio y sesión para eliminar una cuenta con una transacción recuperable.
+7. **VentanaPrincipal** — Se instancia pasándole los servicios reales, la sesión y el servicio de cuenta.
 
 La función devuelve un diccionario con todos los componentes construidos para facilitar su uso desde `principal.py`.
 
@@ -117,7 +121,7 @@ Se actualizó el punto de entrada para usar `construir_aplicacion("datos")` en l
 
 ### `src/social_una/interfaz/ventana_principal.py`
 
-Se adaptó `VentanaPrincipal` para recibir los tres servicios reales y la sesión en lugar de parámetros sueltos de M1. Mantiene la navegación entre pestañas (publicaciones / amistades) con refresco automático de las vistas.
+Se adaptó `VentanaPrincipal` para recibir los servicios reales y la sesión en lugar de parámetros sueltos de M1. Mantiene la navegación entre publicaciones, amistades y el perfil.
 
 ### `src/social_una/interfaz/vista_social.py`
 
@@ -130,6 +134,7 @@ Se refactorizó para almacenar las referencias de los widgets (`_lista_amigos`, 
 - `ServicioAutenticacion` implementa `DirectorioUsuarios`: `obtener_por_id(id)`, `buscar(texto)`, `existe(id)`.
 - Maneja registro con hash de contraseña (PBKDF2-SHA256 con sal aleatoria), inicio de sesión, cierre de sesión y catálogo de usuarios en memoria (`CatalogoUsuarios`).
 - `Sesion` implementa `SesionActiva`: `usuario_actual()`, `hay_sesion_iniciada()`, `iniciar(usuario)`, `cerrar()`.
+- `ServicioCuenta` elimina la cuenta autenticada, sus amistades y sus publicaciones tras verificar la contraseña actual; la interfaz ofrece esta acción desde `Mi perfil`.
 
 ### M2 — Social (`servicio_social.py`, `grafo_amistades.py`)
 
@@ -148,6 +153,7 @@ La interfaz carga desde `interfaz/recursos/iconos/` los seis PNG del módulo de 
 ## Reglas de persistencia y datos
 
 - **Almacenamiento seguro**: `AlmacenJson.escribir_seguro()` escribe primero en un archivo temporal (`.tmp`) en la misma carpeta y, solo al terminar sin errores, lo reemplaza sobre el original con `os.replace()`. Si falla, el archivo original queda intacto y no queda basura temporal.
+- **Eliminación conjunta de cuenta**: `transaccion_json.py` prepara los tres JSON con respaldos y un diario antes de reemplazarlos. Los reemplazos no son atómicos como conjunto; ante un error de escritura se restauran los originales. Si el proceso se interrumpe tras preparar la operación, `construir_aplicacion()` recupera el estado al iniciar antes de cargar los repositorios. Un diario inválido o una recuperación fallida detiene la carga para evitar continuar con estructuras parciales.
 - **Semilla de ejecución**: al iniciar la app, `construir_aplicacion` copia `datos/semilla/amistades.json` a la carpeta de ejecución si aún no existe ahí. Los archivos generados por el usuario (usuarios, publicaciones, amistades nuevas) nunca se sobrescriben.
 - **Archivos de datos generados en ejecución**: `usuarios.json`, `amistades.json`, `publicaciones.json` dentro de la carpeta indicada por `ruta_datos` (por defecto `"datos"`).
 - **Codificación**: todos los archivos JSON se leen/escriben con UTF-8, conservando tildes, eñes y caracteres especiales.

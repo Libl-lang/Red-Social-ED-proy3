@@ -17,6 +17,7 @@ def ejecutar_aplicacion():
     servicio_autenticacion = app["autenticacion"]
     servicio_social = app["social"]
     servicio_publicaciones = app["publicaciones"]
+    servicio_cuenta = app["cuenta"]
     sesion = app["sesion"]
 
     ventana_acceso = None
@@ -30,6 +31,7 @@ def ejecutar_aplicacion():
             servicio_social,
             servicio_publicaciones,
             sesion,
+            servicio_cuenta,
         )
 
     # Crear la ventana de autenticación.

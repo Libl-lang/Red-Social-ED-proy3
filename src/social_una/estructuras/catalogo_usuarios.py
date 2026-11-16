@@ -81,6 +81,17 @@ class CatalogoUsuarios:
 
         return list(self._usuarios)
 
+    def eliminar(self, id_usuario: int) -> bool:
+        """Elimina un usuario y sus índices; devuelve si existía."""
+        usuario = self._usuarios_por_id.pop(id_usuario, None)
+        if usuario is None:
+            return False
+
+        self._usuarios.remove(usuario)
+        nombre_normalizado = self._normalizar(usuario.nombre_usuario)
+        self._usuarios_por_nombre.pop(nombre_normalizado, None)
+        return True
+
     def siguiente_id(self):
         """Calcula el siguiente ID disponible."""
 

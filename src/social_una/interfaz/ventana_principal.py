@@ -4,7 +4,9 @@ from tkinter import ttk, messagebox
 from social_una.dominio.errores import ErrorSocialUna
 from social_una.interfaz.iconos import cargar_icono
 from social_una.interfaz.vista_muro import VistaMuro
+from social_una.interfaz.vista_perfil import VistaPerfil
 from social_una.interfaz.vista_social import VistaSocial
+from social_una.servicios.servicio_cuenta import ServicioCuenta
 
 
 class VentanaPrincipal(tk.Toplevel):
@@ -17,6 +19,7 @@ class VentanaPrincipal(tk.Toplevel):
         servicio_social,
         servicio_publicaciones,
         sesion,
+        servicio_cuenta: ServicioCuenta | None = None,
     ):
         super().__init__(ventana_padre)
 
@@ -24,6 +27,7 @@ class VentanaPrincipal(tk.Toplevel):
         self._servicio_social = servicio_social
         self._servicio_publicaciones = servicio_publicaciones
         self._sesion = sesion
+        self._servicio_cuenta = servicio_cuenta
         self._cerrando = False
         self._icono_bienvenida = cargar_icono(self, "bienvenida")
 
@@ -253,6 +257,18 @@ class VentanaPrincipal(tk.Toplevel):
             command=self._mostrar_amistades,
         )
         self._btn_amistades.pack(
+            fill="x",
+            padx=10,
+            pady=3,
+        )
+
+        self._btn_perfil = ttk.Button(
+            barra_lateral,
+            text="Mi perfil",
+            style="Social.Nav.TButton",
+            command=self._mostrar_perfil,
+        )
+        self._btn_perfil.pack(
             fill="x",
             padx=10,
             pady=3,
@@ -532,6 +548,13 @@ class VentanaPrincipal(tk.Toplevel):
                 else "Social.Nav.TButton"
             )
         )
+        self._btn_perfil.configure(
+            style=(
+                "Social.NavActive.TButton"
+                if seccion == "perfil"
+                else "Social.Nav.TButton"
+            )
+        )
 
     def _programar_ajuste_contenido(self, evento=None):
         """Pospone el cálculo de scroll hasta completar el layout de Tk."""
@@ -674,7 +697,71 @@ class VentanaPrincipal(tk.Toplevel):
 
         self.title("Social UNA - Amistades")
 
-    
+    def _mostrar_perfil(self):
+        """Muestra el perfil del usuario con la sesión iniciada."""
+        self._limpiar_area_contenido()
+        self._mostrar_encabezado_seccion(False)
+        self._actualizar_navegacion("perfil")
+
+        if self._servicio_cuenta is None:
+            messagebox.showerror(
+                "Perfil no disponible",
+                "No se pudo cargar el servicio de cuenta.",
+                parent=self,
+            )
+            return
+
+        try:
+            usuario = self._servicio_autenticacion.obtener_por_id(
+                self._sesion.usuario_actual().id_usuario
+            )
+        except ErrorSocialUna as error:
+            messagebox.showerror(
+                "Perfil no disponible",
+                str(error),
+                parent=self,
+            )
+            return
+
+        self._vista_perfil = VistaPerfil(
+            self._area_contenido,
+            usuario,
+            self._servicio_autenticacion,
+            self._servicio_cuenta,
+            self._cerrar_sesion,
+            self._cuenta_eliminada,
+            self._detener_por_recuperacion,
+        )
+        self._vista_perfil.pack(fill="both", expand=True)
+        self._programar_ajuste_contenido()
+        self._lienzo_contenido.yview_moveto(0)
+        self.title("Social UNA - Mi perfil")
+
+    def _cuenta_eliminada(self):
+        """Informa el éxito y vuelve a la pantalla de acceso."""
+        messagebox.showinfo(
+            "Cuenta eliminada",
+            "Tu cuenta y sus datos relacionados se eliminaron correctamente.",
+            parent=self,
+        )
+        padre = self.master
+        self.destroy()
+        if padre is not None and hasattr(padre, "volver_al_login"):
+            padre.volver_al_login()
+
+    def _detener_por_recuperacion(self, mensaje: str):
+        """Cierra la aplicación si no pudo restaurarse una transacción."""
+        messagebox.showerror(
+            "Se requiere reiniciar",
+            f"{mensaje}\n\nCierra y vuelve a iniciar la aplicación para "
+            "completar la recuperación antes de continuar.",
+            parent=self,
+        )
+        padre = self.master
+        self.destroy()
+        if padre is not None:
+            padre.destroy()
+
     # ---------------------------------------------------------
     # Cierre de sesion
     # ---------------------------------------------------------

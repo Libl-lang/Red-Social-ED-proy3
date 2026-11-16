@@ -9,6 +9,9 @@ from pathlib import Path
 import shutil
 
 from social_una.almacenamiento.almacen_json import AlmacenJson
+from social_una.almacenamiento.transaccion_json import (
+    recuperar_transaccion_json,
+)
 from social_una.almacenamiento.repositorio_usuarios_json import (
     RepositorioUsuariosJson,
 )
@@ -27,6 +30,7 @@ from social_una.servicios.servicio_social import ServicioSocial
 from social_una.servicios.servicio_publicaciones import (
     ServicioPublicaciones,
 )
+from social_una.servicios.servicio_cuenta import ServicioCuenta
 
 
 def _configurar_persistencia_inicial(
@@ -58,6 +62,9 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
 
     ruta_datos = Path(ruta_datos).resolve()
     ruta_semilla = ruta_datos / "semilla"
+
+    # Recuperar una eliminación interrumpida antes de cargar estructuras.
+    recuperar_transaccion_json(ruta_datos)
 
     # 1. Configurar persistencia inicial.
     _configurar_persistencia_inicial(ruta_datos, ruta_semilla)
@@ -106,6 +113,18 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
         registrador=registrador,
     )
 
+    servicio_cuenta = ServicioCuenta(
+        ruta_datos,
+        repositorio_usuarios,
+        repositorio_amistades,
+        repositorio_publicaciones,
+        servicio_autenticacion,
+        servicio_social,
+        servicio_publicaciones,
+        sesion,
+        registrador=registrador,
+    )
+
     # 6. Devolver componentes.
     return {
         "almacen": almacen,
@@ -117,4 +136,5 @@ def construir_aplicacion(ruta_datos: str | Path) -> dict:
         "autenticacion": servicio_autenticacion,
         "social": servicio_social,
         "publicaciones": servicio_publicaciones,
+        "cuenta": servicio_cuenta,
     }

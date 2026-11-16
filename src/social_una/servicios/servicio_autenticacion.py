@@ -141,17 +141,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
                 "El usuario o la contrasena son incorrectos."
             )
 
-        hash_ingresado = hashlib.pbkdf2_hmac(
-            "sha256",
-            contrasena.encode("utf-8"),
-            usuario.sal.encode("utf-8"),
-            self.ITERACIONES_HASH,
-        ).hex()
-
-        if not secrets.compare_digest(
-            hash_ingresado,
-            usuario.hash_contrasena,
-        ):
+        if not self._contrasena_correcta(usuario, contrasena):
             self._registrar_evento(
                 "warning",
                 "Inicio de sesion fallido | Credenciales incorrectas",
@@ -168,6 +158,49 @@ class ServicioAutenticacion(DirectorioUsuarios):
         )
 
         return usuario
+
+    def verificar_contrasena_actual(self, contrasena: str) -> None:
+        """Valida la contraseña del usuario con sesión sin cerrar la sesión."""
+        usuario = self._sesion.usuario_actual()
+        if not contrasena or not self._contrasena_correcta(usuario, contrasena):
+            self._registrar_evento(
+                "warning",
+                f"Verificación de contraseña fallida | "
+                f"ID usuario: {usuario.id_usuario}",
+            )
+            raise ErrorAutenticacion(
+                "La contraseña actual es incorrecta."
+            )
+
+    @staticmethod
+    def _contrasena_correcta(usuario: Usuario, contrasena: str) -> bool:
+        hash_ingresado = hashlib.pbkdf2_hmac(
+            "sha256",
+            contrasena.encode("utf-8"),
+            usuario.sal.encode("utf-8"),
+            ServicioAutenticacion.ITERACIONES_HASH,
+        ).hex()
+        return secrets.compare_digest(
+            hash_ingresado,
+            usuario.hash_contrasena,
+        )
+
+    def eliminar_usuario_de_memoria(self, id_usuario: int) -> None:
+        """Retira el usuario del catálogo y cierra su sesión tras persistir."""
+        usuario_actual = self._sesion.usuario_actual()
+        if usuario_actual.id_usuario != id_usuario:
+            raise ErrorAutenticacion(
+                "La sesión cambió durante la eliminación de la cuenta."
+            )
+        if not self._catalogo.eliminar(id_usuario):
+            raise ErrorNoEncontrado(
+                "La cuenta ya no existe en el catálogo de usuarios."
+            )
+        self._sesion.cerrar()
+        self._registrar_evento(
+            "info",
+            f"Cuenta eliminada | ID usuario: {id_usuario}",
+        )
 
     def cerrar_sesion(self):
         """Cierra la sesion actual."""
@@ -207,4 +240,3 @@ class ServicioAutenticacion(DirectorioUsuarios):
         """Comprueba si existe un usuario con ese identificador."""
 
         return self._catalogo.buscar_por_id(id_usuario) is not None
-

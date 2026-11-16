@@ -163,6 +163,13 @@ class ServicioPublicaciones:
 
         return self._ordenar_recientes(publicaciones)
 
+    def actualizar_historial_en_memoria(
+        self,
+        publicaciones: list[Publicacion],
+    ) -> None:
+        """Sincroniza el historial tras una persistencia conjunta."""
+        self._historial = HistorialPublicaciones(publicaciones)
+
     def obtener_muro_personal(self) -> list[Publicacion]:
         """Devuelve solamente las publicaciones del usuario activo."""
 
