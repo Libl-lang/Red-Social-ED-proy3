@@ -21,6 +21,8 @@ _FONDO = "#F3F6FA"
 _BORDE = "#CFE0F1"
 _SUAVE = "#536B87"
 _FUENTE = "Segoe UI"
+_BLANCO = "#FFFFFF"
+_AZUL_CLARO = "#E8F1FD"
 
 
 class VistaPerfil(ttk.Frame):
@@ -70,6 +72,18 @@ class VistaPerfil(ttk.Frame):
         estilo.map(
             "SocialProfile.Save.TButton",
             background=[("active", "#1D416B"), ("pressed", _MARINO)],
+        )
+        estilo.configure(
+            "SocialProfile.Cancel.TButton",
+            background="#E7EAF0",
+            foreground=_MARINO,
+            font=(_FUENTE, 10, "bold"),
+            padding=(12, 8),
+            borderwidth=0,
+        )
+        estilo.map(
+            "SocialProfile.Cancel.TButton",
+            background=[("active", "#D8DDE6"), ("pressed", "#C9D0DC")],
         )
         estilo.configure(
             "SocialProfile.Delete.TButton",
@@ -327,39 +341,165 @@ class VistaPerfil(ttk.Frame):
         self._cambiando_contrasena = True
         dialogo = tk.Toplevel(self)
         dialogo.title("Cambiar contraseña")
-        dialogo.configure(bg=_FONDO)
+        dialogo.configure(bg=_BLANCO)
         dialogo.resizable(False, False)
         dialogo.transient(self.winfo_toplevel())
 
-        contenido = tk.Frame(dialogo, bg=_FONDO, padx=22, pady=18)
-        contenido.pack(fill="both", expand=True)
-        tk.Label(
-            contenido,
-            text="Actualiza la contraseña de tu cuenta",
-            bg=_FONDO,
-            fg=_MARINO,
-            font=(_FUENTE, 12, "bold"),
-        ).pack(anchor="w", pady=(0, 14))
+        contenedor = tk.Frame(
+            dialogo,
+            bg=_BLANCO,
+            highlightthickness=1,
+            highlightbackground="#91A7C2",
+        )
+        contenedor.pack(fill="both", expand=True)
 
-        campos = []
-        for texto in (
+        encabezado = tk.Frame(contenedor, bg=_MARINO, height=116)
+        encabezado.pack(fill="x")
+        encabezado.pack_propagate(False)
+        icono_candado = tk.Canvas(
+            encabezado,
+            width=86,
+            height=82,
+            bg=_MARINO,
+            highlightthickness=0,
+        )
+        icono_candado.pack(side="left", padx=(18, 12), pady=(8, 18))
+        icono_candado.create_oval(
+            7, 3, 79, 75,
+            outline=_BLANCO,
+            width=3,
+        )
+        icono_candado.create_arc(
+            31, 19, 55, 48,
+            start=0,
+            extent=180,
+            style="arc",
+            outline=_BLANCO,
+            width=3,
+        )
+        icono_candado.create_rectangle(
+            29, 34, 57, 57,
+            fill=_BLANCO,
+            outline=_BLANCO,
+        )
+        icono_candado.create_oval(
+            40, 40, 46, 46,
+            fill=_MARINO,
+            outline=_MARINO,
+        )
+        icono_candado.create_rectangle(
+            42, 44, 44, 51,
+            fill=_MARINO,
+            outline=_MARINO,
+        )
+
+        texto_encabezado = tk.Frame(encabezado, bg=_MARINO)
+        texto_encabezado.pack(side="left", fill="y", pady=(22, 24))
+        tk.Label(
+            texto_encabezado,
+            text="Cambiar contraseña",
+            bg=_MARINO,
+            fg=_BLANCO,
+            font=(_FUENTE, 17, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            texto_encabezado,
+            text="Protegé el acceso a tu cuenta",
+            bg=_MARINO,
+            fg="#E5EDF7",
+            font=(_FUENTE, 10),
+        ).pack(anchor="w", pady=(3, 0))
+
+        decoracion = tk.Canvas(
+            encabezado,
+            height=28,
+            bg=_MARINO,
+            highlightthickness=0,
+        )
+        decoracion.place(relx=0, rely=1, relwidth=1, anchor="sw")
+        decoracion.bind(
+            "<Configure>",
+            lambda evento: self._dibujar_ondas_dialogo(evento),
+        )
+
+        contenido = tk.Frame(contenedor, bg=_BLANCO, padx=30, pady=20)
+        contenido.pack(fill="both", expand=True)
+        etiquetas_campos = (
             "Contraseña actual",
             "Nueva contraseña",
             "Confirmar nueva contraseña",
-        ):
+        )
+        campos = []
+        for indice, texto in enumerate(etiquetas_campos):
             tk.Label(
                 contenido,
                 text=texto,
-                bg=_FONDO,
+                bg=_BLANCO,
                 fg=_MARINO,
-                font=(_FUENTE, 9, "bold"),
-            ).pack(anchor="w", pady=(0, 4))
-            campo = ttk.Entry(contenido, show="*", width=36)
-            campo.pack(fill="x", pady=(0, 10))
+                font=(_FUENTE, 10, "bold"),
+            ).pack(anchor="w", pady=(0, 5))
+
+            fila_campo = tk.Frame(
+                contenido,
+                bg=_BLANCO,
+                highlightthickness=1,
+                highlightbackground="#8EA2BE",
+                highlightcolor=_AZUL,
+            )
+            fila_campo.pack(fill="x", pady=(0, 12 if indice != 1 else 8))
+            campo = ttk.Entry(fila_campo, show="*", font=(_FUENTE, 10))
+            campo.pack(side="left", fill="x", expand=True, ipady=5, padx=(9, 0))
+            ojo = tk.Canvas(
+                fila_campo,
+                width=38,
+                height=32,
+                bg=_BLANCO,
+                highlightthickness=0,
+                cursor="hand2",
+            )
+            ojo.pack(side="right", padx=(2, 5), pady=1)
+            self._dibujar_ojo_contrasena(ojo, visible=False)
+            ojo.bind(
+                "<Button-1>",
+                lambda evento, entrada=campo, icono=ojo: (
+                    self._alternar_visibilidad_contrasena(entrada, icono)
+                    if evento.widget.winfo_exists()
+                    else None
+                ),
+            )
             campos.append(campo)
 
-        botones = tk.Frame(contenido, bg=_FONDO)
-        botones.pack(fill="x", pady=(4, 0))
+            if indice == 1:
+                requisitos = tk.Frame(contenido, bg=_AZUL_CLARO)
+                requisitos.pack(fill="x", pady=(0, 14))
+                tk.Label(
+                    requisitos,
+                    text="ℹ",
+                    bg=_AZUL_CLARO,
+                    fg="#0874DD",
+                    font=(_FUENTE, 16, "bold"),
+                ).pack(side="left", padx=(10, 8), pady=8)
+                texto_requisitos = tk.Frame(requisitos, bg=_AZUL_CLARO)
+                texto_requisitos.pack(side="left", fill="x", pady=7)
+                tk.Label(
+                    texto_requisitos,
+                    text="Requisitos de la nueva contraseña:",
+                    bg=_AZUL_CLARO,
+                    fg=_MARINO,
+                    font=(_FUENTE, 9, "bold"),
+                ).pack(anchor="w")
+                tk.Label(
+                    texto_requisitos,
+                    text="Mínimo 6 caracteres.",
+                    bg=_AZUL_CLARO,
+                    fg=_MARINO,
+                    font=(_FUENTE, 9),
+                ).pack(anchor="w", pady=(2, 0))
+
+        botones = tk.Frame(contenido, bg=_BLANCO)
+        botones.pack(fill="x", pady=(8, 0))
+        botones.columnconfigure(0, weight=3, uniform="dialog-buttons")
+        botones.columnconfigure(1, weight=2, uniform="dialog-buttons")
 
         def cancelar() -> None:
             self._cancelar_dialogo_cambio_contrasena(dialogo)
@@ -388,24 +528,26 @@ class VistaPerfil(ttk.Frame):
 
         ttk.Button(
             botones,
-            text="Cancelar",
-            command=cancelar,
-        ).pack(side="right", padx=(8, 0))
-        ttk.Button(
-            botones,
-            text="Guardar cambios",
+            text="Guardar contraseña",
             style="SocialProfile.Save.TButton",
             command=guardar,
-        ).pack(side="right")
+        ).grid(row=0, column=0, sticky="ew", padx=(0, 10), ipady=2)
+        ttk.Button(
+            botones,
+            text="Cancelar",
+            style="SocialProfile.Cancel.TButton",
+            command=cancelar,
+        ).grid(row=0, column=1, sticky="ew", ipady=2)
         dialogo.protocol("WM_DELETE_WINDOW", cancelar)
         try:
+            dialogo.geometry("500x555")
             dialogo.update_idletasks()
             padre = self.winfo_toplevel()
             x = padre.winfo_rootx() + (
-                padre.winfo_width() - dialogo.winfo_reqwidth()
+                padre.winfo_width() - 500
             ) // 2
             y = padre.winfo_rooty() + (
-                padre.winfo_height() - dialogo.winfo_reqheight()
+                padre.winfo_height() - 555
             ) // 2
             dialogo.geometry(f"+{x}+{y}")
             dialogo.grab_set()
@@ -413,6 +555,75 @@ class VistaPerfil(ttk.Frame):
             self.wait_window(dialogo)
         finally:
             self._cambiando_contrasena = False
+
+    @staticmethod
+    def _dibujar_ondas_dialogo(evento: tk.Event) -> None:
+        lienzo = evento.widget
+        lienzo.delete("decoracion")
+        ancho = max(evento.width, 1)
+        alto = max(evento.height, 1)
+        lienzo.create_line(
+            0, alto * 0.88,
+            ancho * 0.26, alto * 0.82,
+            ancho * 0.55, alto * 0.28,
+            ancho, alto * 0.12,
+            smooth=True,
+            splinesteps=24,
+            fill=_BLANCO,
+            width=5,
+            tags="decoracion",
+        )
+        lienzo.create_line(
+            0, alto,
+            ancho * 0.26, alto * 0.94,
+            ancho * 0.55, alto * 0.4,
+            ancho, alto * 0.24,
+            smooth=True,
+            splinesteps=24,
+            fill=_ROJO,
+            width=7,
+            tags="decoracion",
+        )
+
+    @staticmethod
+    def _dibujar_ojo_contrasena(
+        icono: tk.Canvas,
+        *,
+        visible: bool,
+    ) -> None:
+        icono.delete("ojo")
+        icono.create_line(
+            3, 16, 9, 9, 17, 5, 25, 9, 32, 16,
+            25, 23, 17, 27, 9, 23, 3, 16,
+            smooth=True,
+            splinesteps=20,
+            fill=_MARINO,
+            width=2,
+            tags="ojo",
+        )
+        icono.create_oval(
+            13, 12, 21, 20,
+            outline=_MARINO,
+            width=2,
+            tags="ojo",
+        )
+        if not visible:
+            icono.create_line(
+                5, 27, 29, 4,
+                fill=_MARINO,
+                width=2,
+                tags=("ojo", "oculto"),
+            )
+
+    def _alternar_visibilidad_contrasena(
+        self,
+        campo: ttk.Entry,
+        icono: tk.Canvas,
+    ) -> None:
+        visible = not getattr(icono, "_contrasena_visible", False)
+        campo.configure(show="" if visible else "*")
+        icono._contrasena_visible = visible
+        self._dibujar_ojo_contrasena(icono, visible=visible)
 
     @staticmethod
     def _cancelar_dialogo_cambio_contrasena(dialogo: tk.Toplevel) -> None:

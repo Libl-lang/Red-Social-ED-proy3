@@ -19,6 +19,9 @@ from social_una.estructuras.catalogo_usuarios import CatalogoUsuarios
 from social_una.servicios.sesion import Sesion
 
 
+MINIMO_CONTRASENA = 6
+
+
 class ServicioAutenticacion(DirectorioUsuarios):
     """Gestiona el registro, inicio y cierre de sesion."""
 
@@ -71,9 +74,10 @@ class ServicioAutenticacion(DirectorioUsuarios):
                 "Todos los campos son obligatorios."
             )
 
-        if len(contrasena) < 6:
+        if len(contrasena) < MINIMO_CONTRASENA:
             raise ErrorValidacion(
-                "La contrasena debe tener al menos 6 caracteres."
+                f"La contraseña debe tener al menos "
+                f"{MINIMO_CONTRASENA} caracteres."
             )
 
         if self._catalogo.buscar_por_nombre_usuario(nombre_usuario):
@@ -186,9 +190,10 @@ class ServicioAutenticacion(DirectorioUsuarios):
             raise ErrorValidacion(
                 "La nueva contraseña debe ser diferente de la actual."
             )
-        if len(contrasena_nueva) < 6:
+        if len(contrasena_nueva) < MINIMO_CONTRASENA:
             raise ErrorValidacion(
-                "La nueva contraseña debe tener al menos 6 caracteres."
+                f"La nueva contraseña debe tener al menos "
+                f"{MINIMO_CONTRASENA} caracteres."
             )
 
         usuario_catalogo = self._catalogo.buscar_por_id(

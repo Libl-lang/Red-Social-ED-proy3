@@ -133,7 +133,7 @@ Se refactorizó para almacenar las referencias de los widgets (`_lista_amigos`, 
 
 - `ServicioAutenticacion` implementa `DirectorioUsuarios`: `obtener_por_id(id)`, `buscar(texto)`, `existe(id)`.
 - Maneja registro con hash de contraseña (PBKDF2-SHA256 con sal aleatoria), inicio de sesión, cierre de sesión y catálogo de usuarios en memoria (`CatalogoUsuarios`).
-- Permite cambiar la contraseña de la sesión activa. Se verifica la clave actual y se conserva la política existente de al menos seis caracteres; la nueva clave recibe una sal aleatoria y se guarda como hash PBKDF2-SHA256. El catálogo y la sesión solo se actualizan después de guardar correctamente el JSON.
+- Permite cambiar la contraseña de la sesión activa. Registro y cambio exigen únicamente un mínimo de seis caracteres, sin reglas de composición. Se verifica la clave actual y la nueva recibe una sal aleatoria para guardarse como hash PBKDF2-SHA256. El catálogo y la sesión solo se actualizan después de guardar correctamente el JSON.
 - `Sesion` implementa `SesionActiva`: `usuario_actual()`, `hay_sesion_iniciada()`, `iniciar(usuario)`, `cerrar()`.
 - `ServicioCuenta` elimina la cuenta autenticada, sus amistades y sus publicaciones tras verificar la contraseña actual; la interfaz ofrece esta acción desde `Mi perfil`.
 

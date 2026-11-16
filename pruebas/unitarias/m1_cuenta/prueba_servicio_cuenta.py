@@ -598,6 +598,64 @@ def prueba_cambio_contrasena_persiste_hash_y_conserva_datos(tmp_path):
     assert usuario_iniciado.id_usuario == usuario_antes.id_usuario
 
 
+@pytest.mark.parametrize(
+    "contrasena_nueva",
+    ("abcdef", "123456", "!!!!!!", "abc123"),
+)
+def prueba_cambio_acepta_cualquier_composicion_de_seis_caracteres(
+    tmp_path,
+    contrasena_nueva,
+):
+    contexto = _crear_contexto(tmp_path)
+
+    contexto.autenticacion.cambiar_contrasena(
+        _CONTRASENA,
+        contrasena_nueva,
+        contrasena_nueva,
+    )
+
+    contexto.autenticacion.cerrar_sesion()
+    usuario = contexto.autenticacion.iniciar_sesion(
+        "persona2",
+        contrasena_nueva,
+    )
+    assert usuario.id_usuario == 2
+
+
+@pytest.mark.parametrize(
+    "contrasena",
+    ("abcdef", "123456", "!!!!!!", "abc123"),
+)
+def prueba_registro_acepta_cualquier_composicion_de_seis_caracteres(
+    tmp_path,
+    contrasena,
+):
+    repositorio = RepositorioUsuariosJson(
+        AlmacenJson(),
+        tmp_path / "usuarios.json",
+    )
+    autenticacion = ServicioAutenticacion(repositorio, Sesion())
+
+    usuario = autenticacion.registrar("Persona", "persona", contrasena)
+
+    assert usuario.id_usuario == 1
+    assert usuario.hash_contrasena != contrasena
+    assert usuario.sal
+
+
+def prueba_registro_rechaza_contrasena_de_cinco_caracteres(tmp_path):
+    repositorio = RepositorioUsuariosJson(
+        AlmacenJson(),
+        tmp_path / "usuarios.json",
+    )
+    autenticacion = ServicioAutenticacion(repositorio, Sesion())
+
+    with pytest.raises(ErrorValidacion, match="al menos 6 caracteres"):
+        autenticacion.registrar("Persona", "persona", "abcde")
+
+    assert not (tmp_path / "usuarios.json").exists()
+
+
 def prueba_cambio_contrasena_rechaza_clave_actual_incorrecta(tmp_path):
     contexto = _crear_contexto(tmp_path)
     archivos_antes = _bytes_archivos(tmp_path)
@@ -756,3 +814,60 @@ def prueba_cerrar_sesion_desde_perfil_regresa_al_login(monkeypatch, tmp_path):
     assert not contexto.sesion.hay_sesion_iniciada()
     assert destrucciones == [True]
     assert regresos_al_login == [True]
+
+
+@pytest.mark.parametrize("campo_indice", (0, 1, 2))
+def prueba_icono_ojo_muestra_y_oculta_cada_campo(campo_indice):
+    class CampoFalso:
+        def __init__(self):
+            self.configuracion = {}
+
+        def configure(self, **configuracion):
+            self.configuracion.update(configuracion)
+
+    class IconoFalso:
+        def __init__(self):
+            self.elementos = []
+            self.etiquetas_eliminadas = []
+
+        def delete(self, tag):
+            self.etiquetas_eliminadas.append(tag)
+            self.elementos.clear()
+
+        def create_line(self, *args, **kwargs):
+            self.elementos.append((args, kwargs))
+
+        def create_oval(self, *args, **kwargs):
+            self.elementos.append((args, kwargs))
+
+    campos = [CampoFalso() for _ in range(3)]
+    iconos = [IconoFalso() for _ in range(3)]
+    campo = campos[campo_indice]
+    icono = iconos[campo_indice]
+    vista = SimpleNamespace(
+        _dibujar_ojo_contrasena=VistaPerfil._dibujar_ojo_contrasena
+    )
+
+    VistaPerfil._alternar_visibilidad_contrasena(
+        vista,
+        campo,
+        icono,
+    )
+    assert campo.configuracion == {"show": ""}
+    assert icono._contrasena_visible is True
+    assert not any(
+        elemento[1].get("tags") == ("ojo", "oculto")
+        for elemento in icono.elementos
+    )
+
+    VistaPerfil._alternar_visibilidad_contrasena(
+        vista,
+        campo,
+        icono,
+    )
+    assert campo.configuracion == {"show": "*"}
+    assert icono._contrasena_visible is False
+    assert any(
+        elemento[1].get("tags") == ("ojo", "oculto")
+        for elemento in icono.elementos
+    )
