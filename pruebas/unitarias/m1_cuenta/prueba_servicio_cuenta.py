@@ -26,9 +26,11 @@ from social_una.dominio.errores import (
     ErrorAutenticacion,
     ErrorNoEncontrado,
     ErrorRecuperacionTransaccion,
+    ErrorValidacion,
 )
 from social_una.dominio.modelos import Publicacion, Usuario
 from social_una.interfaz import vista_perfil
+from social_una.interfaz import ventana_principal
 from social_una.interfaz.vista_perfil import VistaPerfil
 from social_una.servicios.servicio_autenticacion import ServicioAutenticacion
 from social_una.servicios.servicio_cuenta import ServicioCuenta
@@ -546,3 +548,211 @@ def prueba_confirmacion_final_elimina_y_cierra_sesion(monkeypatch, tmp_path):
 
     assert completadas == [True]
     assert not contexto.sesion.hay_sesion_iniciada()
+
+
+def prueba_cambio_contrasena_persiste_hash_y_conserva_datos(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    usuario_antes = contexto.sesion.usuario_actual()
+    credenciales_usuario_antes = (
+        usuario_antes.hash_contrasena,
+        usuario_antes.sal,
+    )
+    credenciales_tercero = (
+        contexto.autenticacion.obtener_por_id(1).hash_contrasena,
+        contexto.autenticacion.obtener_por_id(1).sal,
+    )
+    amistades_antes = contexto.repositorio_amistades.cargar_todo()
+    publicaciones_antes = contexto.repositorio_publicaciones.cargar_todo()
+
+    contexto.autenticacion.cambiar_contrasena(
+        _CONTRASENA,
+        "nueva-clave-456",
+        "nueva-clave-456",
+    )
+
+    usuario_guardado = next(
+        usuario
+        for usuario in contexto.repositorio_usuarios.cargar_todo()
+        if usuario.id_usuario == usuario_antes.id_usuario
+    )
+    assert usuario_antes.id_usuario == usuario_guardado.id_usuario
+    assert usuario_antes.nombre == usuario_guardado.nombre
+    assert usuario_guardado.sal != credenciales_usuario_antes[1]
+    assert usuario_guardado.hash_contrasena != credenciales_usuario_antes[0]
+    assert contexto.sesion.usuario_actual() is usuario_antes
+    assert contexto.sesion.hay_sesion_iniciada()
+    assert (
+        contexto.autenticacion.obtener_por_id(1).hash_contrasena,
+        contexto.autenticacion.obtener_por_id(1).sal,
+    ) == credenciales_tercero
+    assert contexto.repositorio_amistades.cargar_todo() == amistades_antes
+    assert contexto.repositorio_publicaciones.cargar_todo() == publicaciones_antes
+
+    contexto.autenticacion.cerrar_sesion()
+    with pytest.raises(ErrorAutenticacion):
+        contexto.autenticacion.iniciar_sesion("persona2", _CONTRASENA)
+    usuario_iniciado = contexto.autenticacion.iniciar_sesion(
+        "persona2",
+        "nueva-clave-456",
+    )
+    assert usuario_iniciado.id_usuario == usuario_antes.id_usuario
+
+
+def prueba_cambio_contrasena_rechaza_clave_actual_incorrecta(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+    credenciales_antes = (
+        contexto.sesion.usuario_actual().hash_contrasena,
+        contexto.sesion.usuario_actual().sal,
+    )
+
+    with pytest.raises(ErrorAutenticacion, match="incorrecta"):
+        contexto.autenticacion.cambiar_contrasena(
+            "clave-incorrecta",
+            "otra-clave-456",
+            "otra-clave-456",
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+    assert (
+        contexto.sesion.usuario_actual().hash_contrasena,
+        contexto.sesion.usuario_actual().sal,
+    ) == credenciales_antes
+
+
+@pytest.mark.parametrize(
+    ("actual", "nueva", "confirmacion"),
+    (
+        ("", "nueva-clave-456", "nueva-clave-456"),
+        (_CONTRASENA, "", ""),
+        (_CONTRASENA, "nueva-clave-456", ""),
+    ),
+)
+def prueba_cambio_contrasena_rechaza_campos_vacios(
+    tmp_path,
+    actual,
+    nueva,
+    confirmacion,
+):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+
+    with pytest.raises(ErrorValidacion, match="obligatorios"):
+        contexto.autenticacion.cambiar_contrasena(
+            actual,
+            nueva,
+            confirmacion,
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+
+
+def prueba_cambio_contrasena_rechaza_confirmacion_diferente(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+
+    with pytest.raises(ErrorValidacion, match="no coinciden"):
+        contexto.autenticacion.cambiar_contrasena(
+            _CONTRASENA,
+            "nueva-clave-456",
+            "otra-clave-456",
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+
+
+def prueba_cambio_contrasena_rechaza_reutilizar_la_actual(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+
+    with pytest.raises(ErrorValidacion, match="diferente"):
+        contexto.autenticacion.cambiar_contrasena(
+            _CONTRASENA,
+            _CONTRASENA,
+            _CONTRASENA,
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+
+
+def prueba_cambio_contrasena_aplica_minimo_de_seis_caracteres(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+
+    with pytest.raises(ErrorValidacion, match="al menos 6 caracteres"):
+        contexto.autenticacion.cambiar_contrasena(
+            _CONTRASENA,
+            "corta",
+            "corta",
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+
+
+def prueba_fallo_al_guardar_conserva_credenciales_en_archivo_y_memoria(
+    tmp_path,
+    monkeypatch,
+):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+    usuario = contexto.sesion.usuario_actual()
+    credenciales_antes = (usuario.hash_contrasena, usuario.sal)
+
+    def fallar_guardado(_usuarios):
+        raise ErrorAlmacenamiento("No se pudo guardar el archivo de prueba.")
+
+    monkeypatch.setattr(
+        contexto.repositorio_usuarios,
+        "guardar_todo",
+        fallar_guardado,
+    )
+
+    with pytest.raises(ErrorAlmacenamiento, match="guardar"):
+        contexto.autenticacion.cambiar_contrasena(
+            _CONTRASENA,
+            "nueva-clave-456",
+            "nueva-clave-456",
+        )
+
+    assert _bytes_archivos(tmp_path) == archivos_antes
+    assert (usuario.hash_contrasena, usuario.sal) == credenciales_antes
+    assert contexto.sesion.hay_sesion_iniciada()
+
+
+def prueba_cancelar_dialogo_cambio_contrasena_no_modifica_datos(tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    archivos_antes = _bytes_archivos(tmp_path)
+    dialogo = SimpleNamespace(destruido=False)
+    dialogo.destroy = lambda: setattr(dialogo, "destruido", True)
+
+    VistaPerfil._cancelar_dialogo_cambio_contrasena(dialogo)
+
+    assert dialogo.destruido
+    assert _bytes_archivos(tmp_path) == archivos_antes
+    contexto.autenticacion.verificar_contrasena_actual(_CONTRASENA)
+
+
+def prueba_cerrar_sesion_desde_perfil_regresa_al_login(monkeypatch, tmp_path):
+    contexto = _crear_contexto(tmp_path)
+    regresos_al_login = []
+    destrucciones = []
+    padre = SimpleNamespace(
+        volver_al_login=lambda: regresos_al_login.append(True)
+    )
+    ventana = SimpleNamespace(
+        _cerrando=False,
+        _servicio_autenticacion=contexto.autenticacion,
+        master=padre,
+        destroy=lambda: destrucciones.append(True),
+    )
+    monkeypatch.setattr(
+        ventana_principal.messagebox,
+        "askyesno",
+        lambda *args, **kwargs: True,
+    )
+
+    ventana_principal.VentanaPrincipal._cerrar_sesion(ventana)
+
+    assert not contexto.sesion.hay_sesion_iniciada()
+    assert destrucciones == [True]
+    assert regresos_al_login == [True]

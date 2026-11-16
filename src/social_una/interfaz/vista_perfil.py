@@ -44,6 +44,7 @@ class VistaPerfil(ttk.Frame):
         self._al_eliminar_cuenta = al_eliminar_cuenta
         self._al_fallo_recuperacion = al_fallo_recuperacion
         self._eliminando = False
+        self._cambiando_contrasena = False
         self._icono_eliminar = cargar_icono(self, "eliminar", 3)
 
         self._crear_interfaz()
@@ -57,6 +58,18 @@ class VistaPerfil(ttk.Frame):
             font=(_FUENTE, 10, "bold"),
             padding=(12, 8),
             borderwidth=0,
+        )
+        estilo.configure(
+            "SocialProfile.Save.TButton",
+            background=_AZUL,
+            foreground="white",
+            font=(_FUENTE, 10, "bold"),
+            padding=(12, 8),
+            borderwidth=0,
+        )
+        estilo.map(
+            "SocialProfile.Save.TButton",
+            background=[("active", "#1D416B"), ("pressed", _MARINO)],
         )
         estilo.configure(
             "SocialProfile.Delete.TButton",
@@ -147,6 +160,82 @@ class VistaPerfil(ttk.Frame):
         ).pack(anchor="w")
 
         tk.Frame(tarjeta, bg=_BORDE, height=1).pack(fill="x", padx=18)
+        fila_cambio = tk.Frame(
+            tarjeta,
+            bg="white",
+            cursor="hand2",
+            takefocus=True,
+        )
+        fila_cambio.pack(fill="x", padx=20, pady=(14, 0))
+        icono_candado = tk.Canvas(
+            fila_cambio,
+            width=24,
+            height=26,
+            bg="white",
+            highlightthickness=0,
+        )
+        icono_candado.create_arc(
+            5, 1, 19, 17,
+            start=0,
+            extent=180,
+            style="arc",
+            outline=_AZUL,
+            width=2,
+        )
+        icono_candado.create_rectangle(
+            5, 10, 19, 23,
+            outline=_AZUL,
+            width=2,
+        )
+        icono_candado.create_oval(
+            11, 14, 13, 16,
+            fill=_AZUL,
+            outline=_AZUL,
+        )
+        icono_candado.pack(side="left", padx=(0, 12))
+        texto_cambio = tk.Frame(fila_cambio, bg="white")
+        texto_cambio.pack(side="left", fill="x", expand=True)
+        tk.Label(
+            texto_cambio,
+            text="Cambiar contraseña",
+            bg="white",
+            fg=_MARINO,
+            font=(_FUENTE, 11, "bold"),
+            anchor="w",
+        ).pack(anchor="w")
+        tk.Label(
+            texto_cambio,
+            text="Actualiza la contraseña de tu cuenta.",
+            bg="white",
+            fg=_SUAVE,
+            font=(_FUENTE, 9),
+            anchor="w",
+        ).pack(anchor="w", pady=(2, 0))
+        flecha_cambio = tk.Label(
+            fila_cambio,
+            text="›",
+            bg="white",
+            fg=_SUAVE,
+            font=(_FUENTE, 20),
+        )
+        flecha_cambio.pack(side="right", padx=(12, 0))
+        widgets_fila_cambio = (
+            fila_cambio,
+            icono_candado,
+            texto_cambio,
+            *texto_cambio.winfo_children(),
+            flecha_cambio,
+        )
+        for widget in widgets_fila_cambio:
+            widget.bind("<Button-1>", self._activar_cambio_contrasena)
+        fila_cambio.bind("<Return>", self._activar_cambio_contrasena)
+        fila_cambio.bind("<space>", self._activar_cambio_contrasena)
+
+        tk.Frame(tarjeta, bg=_BORDE, height=1).pack(
+            fill="x",
+            padx=18,
+            pady=(14, 0),
+        )
         fila_sesion = tk.Frame(tarjeta, bg="white")
         fila_sesion.pack(fill="x", padx=20, pady=14)
         texto_sesion = tk.Frame(fila_sesion, bg="white")
@@ -227,6 +316,107 @@ class VistaPerfil(ttk.Frame):
             ).strftime("%d/%m/%Y")
         except ValueError:
             return self._usuario.fecha_registro
+
+    def _activar_cambio_contrasena(self, evento: tk.Event) -> None:
+        if evento.widget.winfo_exists():
+            self._abrir_dialogo_cambio_contrasena()
+
+    def _abrir_dialogo_cambio_contrasena(self) -> None:
+        if self._cambiando_contrasena:
+            return
+        self._cambiando_contrasena = True
+        dialogo = tk.Toplevel(self)
+        dialogo.title("Cambiar contraseña")
+        dialogo.configure(bg=_FONDO)
+        dialogo.resizable(False, False)
+        dialogo.transient(self.winfo_toplevel())
+
+        contenido = tk.Frame(dialogo, bg=_FONDO, padx=22, pady=18)
+        contenido.pack(fill="both", expand=True)
+        tk.Label(
+            contenido,
+            text="Actualiza la contraseña de tu cuenta",
+            bg=_FONDO,
+            fg=_MARINO,
+            font=(_FUENTE, 12, "bold"),
+        ).pack(anchor="w", pady=(0, 14))
+
+        campos = []
+        for texto in (
+            "Contraseña actual",
+            "Nueva contraseña",
+            "Confirmar nueva contraseña",
+        ):
+            tk.Label(
+                contenido,
+                text=texto,
+                bg=_FONDO,
+                fg=_MARINO,
+                font=(_FUENTE, 9, "bold"),
+            ).pack(anchor="w", pady=(0, 4))
+            campo = ttk.Entry(contenido, show="*", width=36)
+            campo.pack(fill="x", pady=(0, 10))
+            campos.append(campo)
+
+        botones = tk.Frame(contenido, bg=_FONDO)
+        botones.pack(fill="x", pady=(4, 0))
+
+        def cancelar() -> None:
+            self._cancelar_dialogo_cambio_contrasena(dialogo)
+
+        def guardar() -> None:
+            try:
+                self._autenticacion.cambiar_contrasena(
+                    campos[0].get(),
+                    campos[1].get(),
+                    campos[2].get(),
+                )
+            except ErrorSocialUna as error:
+                messagebox.showerror(
+                    "No se pudo cambiar la contraseña",
+                    str(error),
+                    parent=dialogo,
+                )
+                return
+
+            dialogo.destroy()
+            messagebox.showinfo(
+                "Contraseña actualizada",
+                "Tu contraseña se cambió correctamente.",
+                parent=self.winfo_toplevel(),
+            )
+
+        ttk.Button(
+            botones,
+            text="Cancelar",
+            command=cancelar,
+        ).pack(side="right", padx=(8, 0))
+        ttk.Button(
+            botones,
+            text="Guardar cambios",
+            style="SocialProfile.Save.TButton",
+            command=guardar,
+        ).pack(side="right")
+        dialogo.protocol("WM_DELETE_WINDOW", cancelar)
+        try:
+            dialogo.update_idletasks()
+            padre = self.winfo_toplevel()
+            x = padre.winfo_rootx() + (
+                padre.winfo_width() - dialogo.winfo_reqwidth()
+            ) // 2
+            y = padre.winfo_rooty() + (
+                padre.winfo_height() - dialogo.winfo_reqheight()
+            ) // 2
+            dialogo.geometry(f"+{x}+{y}")
+            dialogo.grab_set()
+            campos[0].focus_set()
+            self.wait_window(dialogo)
+        finally:
+            self._cambiando_contrasena = False
+
+    @staticmethod
+    def _cancelar_dialogo_cambio_contrasena(dialogo: tk.Toplevel) -> None:
+        dialogo.destroy()
 
     def _solicitar_eliminacion(self) -> None:
         if self._eliminando:

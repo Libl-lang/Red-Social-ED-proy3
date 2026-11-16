@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import logging
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from social_una.dominio.contratos import (
@@ -80,14 +81,7 @@ class ServicioAutenticacion(DirectorioUsuarios):
                 "El nombre de usuario ya esta registrado."
             )
 
-        sal = secrets.token_hex(16)
-
-        hash_contrasena = hashlib.pbkdf2_hmac(
-            "sha256",
-            contrasena.encode("utf-8"),
-            sal.encode("utf-8"),
-            self.ITERACIONES_HASH,
-        ).hex()
+        sal, hash_contrasena = self._crear_credenciales(contrasena)
 
         usuario = Usuario(
             id_usuario=self._catalogo.siguiente_id(),
@@ -171,6 +165,76 @@ class ServicioAutenticacion(DirectorioUsuarios):
             raise ErrorAutenticacion(
                 "La contraseña actual es incorrecta."
             )
+
+    def cambiar_contrasena(
+        self,
+        contrasena_actual: str,
+        contrasena_nueva: str,
+        confirmacion: str,
+    ) -> None:
+        """Cambia la contraseña de la sesión y persiste antes de actualizarla."""
+        if not contrasena_actual or not contrasena_nueva or not confirmacion:
+            raise ErrorValidacion("Todos los campos son obligatorios.")
+        if contrasena_nueva != confirmacion:
+            raise ErrorValidacion(
+                "La nueva contraseña y su confirmación no coinciden."
+            )
+
+        usuario_sesion = self._sesion.usuario_actual()
+        self.verificar_contrasena_actual(contrasena_actual)
+        if contrasena_nueva == contrasena_actual:
+            raise ErrorValidacion(
+                "La nueva contraseña debe ser diferente de la actual."
+            )
+        if len(contrasena_nueva) < 6:
+            raise ErrorValidacion(
+                "La nueva contraseña debe tener al menos 6 caracteres."
+            )
+
+        usuario_catalogo = self._catalogo.buscar_por_id(
+            usuario_sesion.id_usuario
+        )
+        if usuario_catalogo is None:
+            raise ErrorNoEncontrado(
+                "No se encontró el usuario de la sesión actual."
+            )
+
+        sal, hash_contrasena = self._crear_credenciales(contrasena_nueva)
+        usuarios_actualizados = [
+            replace(
+                usuario,
+                hash_contrasena=hash_contrasena,
+                sal=sal,
+            )
+            if usuario.id_usuario == usuario_sesion.id_usuario
+            else usuario
+            for usuario in self._catalogo.listar_todos()
+        ]
+
+        self._repositorio.guardar_todo(usuarios_actualizados)
+
+        usuario_catalogo.hash_contrasena = hash_contrasena
+        usuario_catalogo.sal = sal
+        if usuario_sesion is not usuario_catalogo:
+            usuario_sesion.hash_contrasena = hash_contrasena
+            usuario_sesion.sal = sal
+        self._registrar_evento(
+            "info",
+            f"Contraseña actualizada | "
+            f"ID usuario: {usuario_sesion.id_usuario}",
+        )
+
+    @classmethod
+    def _crear_credenciales(cls, contrasena: str) -> tuple[str, str]:
+        """Devuelve una sal aleatoria y el hash PBKDF2 correspondiente."""
+        sal = secrets.token_hex(16)
+        hash_contrasena = hashlib.pbkdf2_hmac(
+            "sha256",
+            contrasena.encode("utf-8"),
+            sal.encode("utf-8"),
+            cls.ITERACIONES_HASH,
+        ).hex()
+        return sal, hash_contrasena
 
     @staticmethod
     def _contrasena_correcta(usuario: Usuario, contrasena: str) -> bool:

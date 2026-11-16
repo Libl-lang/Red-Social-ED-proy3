@@ -126,23 +126,6 @@ class VentanaPrincipal(tk.Toplevel):
             background=[("active", "#A90E27")],
             foreground=[("active", "white")],
         )
-        estilo.configure(
-            "Social.Logout.TButton",
-            background="#C8102E",
-            foreground="white",
-            font=("Segoe UI", 10, "bold"),
-            padding=(14, 9),
-            borderwidth=0,
-        )
-        estilo.map(
-            "Social.Logout.TButton",
-            background=[
-                ("pressed", "#9E1028"),
-                ("active", "#A90E27"),
-            ],
-            foreground=[("disabled", "#F8E8EB")],
-        )
-
         barra_superior = tk.Frame(self, bg="#102A4C", padx=24, pady=8)
         barra_superior.pack(fill="x")
 
@@ -189,19 +172,7 @@ class VentanaPrincipal(tk.Toplevel):
             fg="#E7EEF7",
             font=("Segoe UI", 10),
         )
-        self._etiqueta_usuario.pack(side="left", padx=(0, 16))
-        tk.Frame(acciones_usuario, bg="#506681", width=1, height=30).pack(
-            side="left",
-            padx=(0, 16),
-        )
-
-        self._btn_cerrar_sesion = ttk.Button(
-            acciones_usuario,
-            text="Cerrar sesión",
-            style="Social.Logout.TButton",
-            command=self._cerrar_sesion,
-        )
-        self._btn_cerrar_sesion.pack(side="left")
+        self._etiqueta_usuario.pack(side="left")
 
         self._lienzo_ondas_superior = tk.Canvas(
             barra_superior,
