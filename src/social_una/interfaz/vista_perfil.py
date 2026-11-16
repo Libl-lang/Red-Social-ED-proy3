@@ -447,12 +447,36 @@ class VistaPerfil(ttk.Frame):
                 highlightcolor=_AZUL,
             )
             fila_campo.pack(fill="x", pady=(0, 12 if indice != 1 else 8))
-            campo = ttk.Entry(fila_campo, show="*", font=(_FUENTE, 10))
+            campo = tk.Entry(
+                fila_campo,
+                show="*",
+                font=(_FUENTE, 10),
+                bg=_BLANCO,
+                fg=_MARINO,
+                insertbackground=_MARINO,
+                relief="flat",
+                borderwidth=0,
+                highlightthickness=0,
+            )
             campo.pack(side="left", fill="x", expand=True, ipady=5, padx=(9, 0))
+            campo.bind(
+                "<FocusIn>",
+                lambda evento: self._actualizar_borde_campo(
+                    evento.widget.master,
+                    enfocado=True,
+                ),
+            )
+            campo.bind(
+                "<FocusOut>",
+                lambda evento: self._actualizar_borde_campo(
+                    evento.widget.master,
+                    enfocado=False,
+                ),
+            )
             ojo = tk.Canvas(
                 fila_campo,
-                width=38,
-                height=32,
+                width=30,
+                height=26,
                 bg=_BLANCO,
                 highlightthickness=0,
                 cursor="hand2",
@@ -593,8 +617,8 @@ class VistaPerfil(ttk.Frame):
     ) -> None:
         icono.delete("ojo")
         icono.create_line(
-            3, 16, 9, 9, 17, 5, 25, 9, 32, 16,
-            25, 23, 17, 27, 9, 23, 3, 16,
+            5, 13, 9, 8, 15, 6, 21, 8, 25, 13,
+            21, 18, 15, 20, 9, 18, 5, 13,
             smooth=True,
             splinesteps=20,
             fill=_MARINO,
@@ -602,22 +626,33 @@ class VistaPerfil(ttk.Frame):
             tags="ojo",
         )
         icono.create_oval(
-            13, 12, 21, 20,
+            12, 10, 18, 16,
             outline=_MARINO,
             width=2,
             tags="ojo",
         )
         if not visible:
             icono.create_line(
-                5, 27, 29, 4,
+                7, 21, 23, 5,
                 fill=_MARINO,
                 width=2,
                 tags=("ojo", "oculto"),
             )
 
+    @staticmethod
+    def _actualizar_borde_campo(
+        marco: tk.Frame,
+        *,
+        enfocado: bool,
+    ) -> None:
+        marco.configure(
+            highlightbackground=_AZUL if enfocado else "#8EA2BE",
+            highlightcolor=_AZUL,
+        )
+
     def _alternar_visibilidad_contrasena(
         self,
-        campo: ttk.Entry,
+        campo: tk.Entry,
         icono: tk.Canvas,
     ) -> None:
         visible = not getattr(icono, "_contrasena_visible", False)
