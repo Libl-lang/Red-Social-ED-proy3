@@ -1,19 +1,10 @@
-import sys
 from pathlib import Path
 
 from social_una.composicion import construir_aplicacion
 from social_una.interfaz.vista_autenticacion import VistaAutenticacion
 from social_una.interfaz.ventana_principal import VentanaPrincipal
 
-# En modo desarrollo (__file__ apunta al script fuente), la carpeta de datos
-# está dos niveles arriba del archivo principal.py (raíz del proyecto).
-# En modo congelado (PyInstaller), sys.executable apunta al .exe y los datos
-# deben resolverse junto a él para poder escribir JSON de usuarios, etc.
-if getattr(sys, "frozen", False):
-    RAIZ_PROYECTO = Path(sys.executable).resolve().parent
-else:
-    RAIZ_PROYECTO = Path(__file__).resolve().parents[2]
-
+RAIZ_PROYECTO = Path(__file__).resolve().parents[2]
 RUTA_DATOS = RAIZ_PROYECTO / "datos"
 
 
